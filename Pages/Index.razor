@@ -1,0 +1,792 @@
+@page "/"
+@using System.IO
+@using PdfSharpCore.Pdf
+@using PdfSharpCore.Pdf.IO
+@using PdfSharpCore.Drawing
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<PageTitle>PDF Stamper</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>PDF Stamper Tool</h1>
+        <button class="btn btn-outline-primary" @onclick="ToggleSettings">
+            <span>⚙️ Manage Phrases</span>
+        </button>
+    </div>
+    
+    @if (showSettings)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Stamp Phrase Management</h5>
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control" @bind="newPhrase" placeholder="Enter new phrase" />
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-success w-100" @onclick="AddPhrase">Add Phrase</button>
+                    </div>
+                </div>
+                
+                <h6>Saved Phrases:</h6>
+                <div class="list-group">
+                    @foreach (var phrase in stampPhrases)
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>@phrase</span>
+                            <button class="btn btn-sm btn-danger" @onclick="() => RemovePhrase(phrase)">Remove</button>
+                        </div>
+                    }
+                </div>
+                
+                @if (!stampPhrases.Any())
+                {
+                    <p class="text-muted mt-2">No saved phrases. Add some above!</p>
+                }
+            </div>
+        </div>
+    }
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Upload PDF</h5>
+                    <InputFile OnChange="HandleFileSelected" class="form-control" accept=".pdf" />
+                    
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mt-3">@errorMessage</div>
+                    }
+                    
+                    @if (pdfLoaded)
+                    {
+                        <div class="alert alert-success mt-3">
+                            PDF loaded successfully! (@pageCount page(s))
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            @if (pdfLoaded)
+            {
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Stamp Settings</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Stamp Text (use \n for new lines)</label>
+                            <select class="form-select mb-2" @bind="stampText">
+                                <option value="">-- Select a phrase --</option>
+                                @foreach (var phrase in stampPhrases)
+                                {
+                                    <option value="@phrase">@phrase</option>
+                                }
+                            </select>
+                            <textarea class="form-control" rows="3" @bind="stampText" placeholder="Or enter custom text (use \n for line breaks)"></textarea>
+                            <small class="text-muted">Example: CONFIDENTIAL\nDO NOT COPY</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Add Symbol</label>
+                            <select class="form-select" @bind="selectedSymbol">
+                                <option value="">-- No Symbol --</option>
+                                <option value="[X]">[X] Checkmark</option>
+                                <option value="[!]">[!] Alert/Warning</option>
+                                <option value="[*]">[*] Star/Important</option>
+                                <option value="[APPROVED]">[APPROVED]</option>
+                                <option value="[CONFIDENTIAL]">[CONFIDENTIAL]</option>
+                                <option value="[DRAFT]">[DRAFT]</option>
+                                <option value="[URGENT]">[URGENT]</option>
+                                <option value="[COPY]">[COPY]</option>
+                                <option value=">>>">>> Forward Arrows</option>
+                                <option value="<<<">&lt;&lt;&lt; Back Arrows</option>
+                                <option value="***">*** Stars</option>
+                                <option value="==">== Double Line</option>
+                                <option value="--">-- Dash Line</option>
+                                <option value="###">### Hash Marks</option>
+                            </select>
+                            <small class="text-muted">Simple text-based symbols</small>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(selectedSymbol))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Symbol Position</label>
+                                <select class="form-select" @bind="symbolPosition">
+                                    <option value="Before">Before Text</option>
+                                    <option value="After">After Text</option>
+                                    <option value="Above">Above Text</option>
+                                    <option value="Below">Below Text</option>
+                                </select>
+                            </div>
+                        }
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Font Family</label>
+                            <select class="form-select" @bind="fontFamily">
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Comic Sans MS">Comic Sans MS</option>
+                                <option value="Trebuchet MS">Trebuchet MS</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Tahoma">Tahoma</option>
+                                <option value="Palatino Linotype">Palatino Linotype</option>
+                                <option value="Lucida Console">Lucida Console</option>
+                                <option value="Garamond">Garamond</option>
+                                <option value="Bookman Old Style">Bookman Old Style</option>
+                                <option value="Arial Black">Arial Black</option>
+                                <option value="Calibri">Calibri (Windows)</option>
+                                <option value="Cambria">Cambria (Windows)</option>
+                                <option value="Consolas">Consolas (Windows)</option>
+                                <option value="Segoe UI">Segoe UI (Windows)</option>
+                            </select>
+                            <small class="text-muted">Note: Some fonts may only work on specific operating systems</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Font Size</label>
+                            <input type="number" class="form-control" @bind="fontSize" min="8" max="72" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Position</label>
+                            <select class="form-select" @bind="stampPosition">
+                                <option value="TopLeft">Top Left</option>
+                                <option value="TopCenter">Top Center</option>
+                                <option value="TopRight">Top Right</option>
+                                <option value="Center">Center</option>
+                                <option value="BottomLeft">Bottom Left</option>
+                                <option value="BottomCenter">Bottom Center</option>
+                                <option value="BottomRight">Bottom Right</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Color</label>
+                            <select class="form-select" @bind="stampColor">
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="Green">Green</option>
+                                <option value="Black">Black</option>
+                                <option value="Gray">Gray</option>
+                                <option value="Orange">Orange</option>
+                                <option value="Purple">Purple</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @bind="showBorder" id="showBorder">
+                                <label class="form-check-label" for="showBorder">
+                                    Show Border/Effects
+                                </label>
+                            </div>
+                        </div>
+                        
+                        @if (showBorder)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Border Style</label>
+                                <select class="form-select" @bind="borderStyle">
+                                    <option value="Single">Single Line</option>
+                                    <option value="Double">Double Line</option>
+                                    <option value="Rounded">Rounded Corners</option>
+                                    <option value="Outline">Outline Text Only</option>
+                                    <option value="Shadow">Drop Shadow</option>
+                                    <option value="Glow">Glow Effect</option>
+                                    <option value="Highlight">Highlight Background</option>
+                                    <option value="Dashed">Dashed Border</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Border Color</label>
+                                <select class="form-select" @bind="borderColor">
+                                    <option value="Red">Red</option>
+                                    <option value="Blue">Blue</option>
+                                    <option value="Green">Green</option>
+                                    <option value="Black">Black</option>
+                                    <option value="Gray">Gray</option>
+                                    <option value="Orange">Orange</option>
+                                    <option value="Purple">Purple</option>
+                                    <option value="Yellow">Yellow</option>
+                                    <option value="White">White</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Border Width</label>
+                                <input type="number" class="form-control" @bind="borderWidth" min="1" max="10" />
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Border Padding</label>
+                                <input type="number" class="form-control" @bind="borderPadding" min="5" max="50" />
+                            </div>
+                            
+                            @if (borderStyle == "Rounded")
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">Corner Radius</label>
+                                    <input type="number" class="form-control" @bind="cornerRadius" min="5" max="50" />
+                                </div>
+                            }
+                            
+                            @if (borderStyle == "Shadow" || borderStyle == "Glow")
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">Effect Intensity</label>
+                                    <input type="number" class="form-control" @bind="effectIntensity" min="1" max="10" />
+                                </div>
+                            }
+                            
+                            @if (borderStyle == "Highlight")
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">Background Opacity (0-100)</label>
+                                    <input type="number" class="form-control" @bind="backgroundOpacity" min="0" max="100" />
+                                </div>
+                            }
+                        }
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @bind="stampAllPages" id="stampAllPages">
+                                <label class="form-check-label" for="stampAllPages">
+                                    Stamp all pages
+                                </label>
+                            </div>
+                        </div>
+                        
+                        @if (!stampAllPages)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Page Number (1-@pageCount)</label>
+                                <input type="number" class="form-control" @bind="pageNumber" min="1" max="@pageCount" />
+                            </div>
+                        }
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Number of Stamps per Page</label>
+                            <select class="form-select" @bind="stampsPerPage">
+                                <option value="1">1 Stamp</option>
+                                <option value="2">2 Stamps</option>
+                                <option value="3">3 Stamps</option>
+                            </select>
+                        </div>
+                        
+                        @if (stampsPerPage > 1)
+                        {
+                            <div class="alert alert-info">
+                                <small>
+                                    <strong>Multiple Stamps:</strong><br/>
+                                    Stamp 1: Current position (@stampPosition)<br/>
+                                    @if (stampsPerPage >= 2)
+                                    {
+                                        <span>
+                                            Stamp 2: 
+                                            <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp2Position">
+                                                <option value="TopLeft">Top Left</option>
+                                                <option value="TopCenter">Top Center</option>
+                                                <option value="TopRight">Top Right</option>
+                                                <option value="Center">Center</option>
+                                                <option value="BottomLeft">Bottom Left</option>
+                                                <option value="BottomCenter">Bottom Center</option>
+                                                <option value="BottomRight">Bottom Right</option>
+                                            </select>
+                                            <br/>
+                                        </span>
+                                    }
+                                    @if (stampsPerPage >= 3)
+                                    {
+                                        <span>
+                                            Stamp 3: 
+                                            <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp3Position">
+                                                <option value="TopLeft">Top Left</option>
+                                                <option value="TopCenter">Top Center</option>
+                                                <option value="TopRight">Top Right</option>
+                                                <option value="Center">Center</option>
+                                                <option value="BottomLeft">Bottom Left</option>
+                                                <option value="BottomCenter">Bottom Center</option>
+                                                <option value="BottomRight">Bottom Right</option>
+                                            </select>
+                                        </span>
+                                    }
+                                </small>
+                            </div>
+                        }
+                        
+                        <button class="btn btn-primary" @onclick="StampPdf" disabled="@isProcessing">
+                            @if (isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Stamp PDF
+                        </button>
+                        
+                        @if (stampedPdfBytes != null)
+                        {
+                            <button class="btn btn-success ms-2" @onclick="DownloadStampedPdf">
+                                Download Stamped PDF
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="col-md-6">
+            @if (pdfLoaded && originalPdfBytes != null)
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Original PDF Preview</h5>
+                        <iframe src="@GetPdfDataUrl(originalPdfBytes)" 
+                                style="width: 100%; height: 500px; border: 1px solid #ddd;">
+                        </iframe>
+                    </div>
+                </div>
+                
+                @if (stampedPdfBytes != null)
+                {
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Stamped PDF Preview</h5>
+                            <iframe src="@GetPdfDataUrl(stampedPdfBytes)" 
+                                    style="width: 100%; height: 500px; border: 1px solid #ddd;">
+                            </iframe>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private byte[]? originalPdfBytes;
+    private byte[]? stampedPdfBytes;
+    private bool pdfLoaded = false;
+    private int pageCount = 0;
+    private string errorMessage = string.Empty;
+    private bool isProcessing = false;
+    private bool showSettings = false;
+    private string newPhrase = string.Empty;
+    
+    private string stampText = "CONFIDENTIAL";
+    private string stampPosition = "TopRight";
+    private int fontSize = 24;
+    private string fontFamily = "Arial";
+    private string stampColor = "Red";
+    private bool stampAllPages = true;
+    private int pageNumber = 1;
+    private bool showBorder = false;
+    private string borderStyle = "Single";
+    private string borderColor = "Red";
+    private int borderWidth = 2;
+    private int borderPadding = 10;
+    private int cornerRadius = 15;
+    private int effectIntensity = 5;
+    private int backgroundOpacity = 30;
+    private string selectedSymbol = "";
+    private string symbolPosition = "Before";
+    private int stampsPerPage = 1;
+    private string stamp2Position = "BottomLeft";
+    private string stamp3Position = "BottomRight";
+    
+    private List<string> stampPhrases = new List<string>
+    {
+        "CONFIDENTIAL",
+        "DRAFT",
+        "APPROVED",
+        "COPY",
+        "VOID",
+        "URGENT",
+        "FOR REVIEW",
+        "FINAL"
+    };
+    
+    private void ToggleSettings()
+    {
+        showSettings = !showSettings;
+    }
+    
+    private void AddPhrase()
+    {
+        if (!string.IsNullOrWhiteSpace(newPhrase) && !stampPhrases.Contains(newPhrase))
+        {
+            stampPhrases.Add(newPhrase);
+            SavePhrasesToLocalStorage();
+            newPhrase = string.Empty;
+        }
+    }
+    
+    private void RemovePhrase(string phrase)
+    {
+        stampPhrases.Remove(phrase);
+        SavePhrasesToLocalStorage();
+    }
+    
+    private async void SavePhrasesToLocalStorage()
+    {
+        try
+        {
+            var phrasesJson = System.Text.Json.JsonSerializer.Serialize(stampPhrases);
+            await JS.InvokeVoidAsync("localStorage.setItem", "stampPhrases", phrasesJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving phrases: {ex.Message}");
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var phrasesJson = await JS.InvokeAsync<string>("localStorage.getItem", "stampPhrases");
+                if (!string.IsNullOrEmpty(phrasesJson))
+                {
+                    var savedPhrases = System.Text.Json.JsonSerializer.Deserialize<List<string>>(phrasesJson);
+                    if (savedPhrases != null && savedPhrases.Any())
+                    {
+                        stampPhrases = savedPhrases;
+                    }
+                }
+                
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading data: {ex.Message}");
+            }
+        }
+    }
+    
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        errorMessage = string.Empty;
+        pdfLoaded = false;
+        stampedPdfBytes = null;
+        
+        try
+        {
+            var file = e.File;
+            
+            if (file.ContentType != "application/pdf")
+            {
+                errorMessage = "Please select a PDF file.";
+                return;
+            }
+            
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(memoryStream);
+            originalPdfBytes = memoryStream.ToArray();
+            
+            using var stream = new MemoryStream(originalPdfBytes);
+            using var document = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
+            pageCount = document.PageCount;
+            
+            pdfLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading PDF: {ex.Message}";
+        }
+    }
+    
+    private async Task StampPdf()
+    {
+        if (originalPdfBytes == null) return;
+        
+        isProcessing = true;
+        errorMessage = string.Empty;
+        
+        try
+        {
+            await Task.Run(() =>
+            {
+                using var inputStream = new MemoryStream(originalPdfBytes);
+                using var document = PdfReader.Open(inputStream, PdfDocumentOpenMode.Modify);
+                
+                var pagesToStamp = stampAllPages 
+                    ? Enumerable.Range(0, document.PageCount) 
+                    : new[] { pageNumber - 1 };
+                
+                foreach (var pageIndex in pagesToStamp)
+                {
+                    if (pageIndex < 0 || pageIndex >= document.PageCount) continue;
+                    
+                    var page = document.Pages[pageIndex];
+                    
+                    var positions = new List<string> { stampPosition };
+                    if (stampsPerPage >= 2) positions.Add(stamp2Position);
+                    if (stampsPerPage >= 3) positions.Add(stamp3Position);
+                    
+                    foreach (var position in positions)
+                    {
+                        ApplyStamp(page, position);
+                    }
+                }
+                
+                using var outputStream = new MemoryStream();
+                document.Save(outputStream);
+                stampedPdfBytes = outputStream.ToArray();
+            });
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error stamping PDF: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+    
+    private void ApplyStamp(PdfPage page, string position)
+    {
+        using var gfx = XGraphics.FromPdfPage(page);
+        
+        var font = new XFont(fontFamily, fontSize, XFontStyle.Bold);
+        var brush = GetBrush(stampColor);
+        
+        // Prepare text with symbol
+        var fullText = PrepareTextWithSymbol();
+        
+        var lines = fullText.Replace("\\n", "\n").Split('\n');
+        var lineHeight = font.Height;
+        
+        var maxWidth = 0.0;
+        foreach (var line in lines)
+        {
+            var lineSize = gfx.MeasureString(line, font);
+            if (lineSize.Width > maxWidth)
+                maxWidth = lineSize.Width;
+        }
+        
+        var totalHeight = lineHeight * lines.Length;
+        var textSize = new XSize(maxWidth, totalHeight);
+        
+        var point = GetPosition(position, page.Width, page.Height, textSize);
+        
+        if (showBorder)
+        {
+            DrawBorderEffect(gfx, point, textSize, lines, font);
+        }
+        
+        var currentY = point.Y;
+        foreach (var line in lines)
+        {
+            gfx.DrawString(line, font, brush, new XPoint(point.X, currentY), XStringFormats.TopLeft);
+            currentY += lineHeight;
+        }
+    }
+    
+    private string PrepareTextWithSymbol()
+    {
+        if (string.IsNullOrEmpty(selectedSymbol))
+            return stampText;
+        
+        return symbolPosition switch
+        {
+            "Before" => $"{selectedSymbol} {stampText}",
+            "After" => $"{stampText} {selectedSymbol}",
+            "Above" => $"{selectedSymbol}\n{stampText}",
+            "Below" => $"{stampText}\n{selectedSymbol}",
+            _ => stampText
+        };
+    }
+    
+    private XBrush GetBrush(string color)
+    {
+        return color switch
+        {
+            "Red" => XBrushes.Red,
+            "Blue" => XBrushes.Blue,
+            "Green" => XBrushes.Green,
+            "Black" => XBrushes.Black,
+            "Gray" => XBrushes.Gray,
+            "Orange" => XBrushes.Orange,
+            "Purple" => XBrushes.Purple,
+            "Yellow" => XBrushes.Yellow,
+            "White" => XBrushes.White,
+            _ => XBrushes.Red
+        };
+    }
+    
+    private void DrawBorderEffect(XGraphics gfx, XPoint point, XSize textSize, string[] lines, XFont font)
+    {
+        var borderBrush = GetBrush(borderColor);
+        var pen = new XPen(borderBrush, borderWidth);
+        var rect = new XRect(
+            point.X - borderPadding,
+            point.Y - borderPadding,
+            textSize.Width + (borderPadding * 2),
+            textSize.Height + (borderPadding * 2)
+        );
+        
+        switch (borderStyle)
+        {
+            case "Single":
+                gfx.DrawRectangle(pen, XBrushes.Transparent, rect);
+                break;
+                
+            case "Double":
+                gfx.DrawRectangle(pen, XBrushes.Transparent, rect);
+                var innerRect = new XRect(
+                    rect.X + borderWidth * 2,
+                    rect.Y + borderWidth * 2,
+                    rect.Width - borderWidth * 4,
+                    rect.Height - borderWidth * 4
+                );
+                gfx.DrawRectangle(pen, XBrushes.Transparent, innerRect);
+                break;
+                
+            case "Rounded":
+                DrawRoundedRectangle(gfx, pen, rect, cornerRadius);
+                break;
+                
+            case "Outline":
+                var outlinePen = new XPen(borderBrush, borderWidth);
+                var currentY = point.Y;
+                foreach (var line in lines)
+                {
+                    var textPoint = new XPoint(point.X, currentY);
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            if (dx != 0 || dy != 0)
+                            {
+                                gfx.DrawString(line, font, borderBrush, 
+                                    new XPoint(textPoint.X + dx * borderWidth, textPoint.Y + dy * borderWidth), 
+                                    XStringFormats.TopLeft);
+                            }
+                        }
+                    }
+                    currentY += font.Height;
+                }
+                break;
+                
+            case "Shadow":
+                var shadowRect = new XRect(
+                    rect.X + effectIntensity,
+                    rect.Y + effectIntensity,
+                    rect.Width,
+                    rect.Height
+                );
+                var shadowBrush = new XSolidBrush(XColor.FromArgb(128, 0, 0, 0));
+                gfx.DrawRectangle(shadowBrush, shadowRect);
+                gfx.DrawRectangle(XPens.Transparent, XBrushes.White, rect);
+                break;
+                
+            case "Glow":
+                for (int i = effectIntensity; i > 0; i--)
+                {
+                    var glowRect = new XRect(
+                        rect.X - i,
+                        rect.Y - i,
+                        rect.Width + (i * 2),
+                        rect.Height + (i * 2)
+                    );
+                    var alpha = (byte)(50 / effectIntensity * (effectIntensity - i + 1));
+                    var glowColor = GetColorFromBrush(borderBrush);
+                    var glowBrush = new XSolidBrush(XColor.FromArgb(alpha, glowColor.R, glowColor.G, glowColor.B));
+                    gfx.DrawRectangle(glowBrush, glowRect);
+                }
+                break;
+                
+            case "Highlight":
+                var bgColor = GetColorFromBrush(borderBrush);
+                var highlightBrush = new XSolidBrush(
+                    XColor.FromArgb((byte)(255 * backgroundOpacity / 100), bgColor.R, bgColor.G, bgColor.B)
+                );
+                gfx.DrawRectangle(highlightBrush, rect);
+                break;
+                
+            case "Dashed":
+                var dashedPen = new XPen(borderBrush, borderWidth);
+                dashedPen.DashStyle = XDashStyle.Dash;
+                gfx.DrawRectangle(dashedPen, XBrushes.Transparent, rect);
+                break;
+        }
+    }
+    
+    private void DrawRoundedRectangle(XGraphics gfx, XPen pen, XRect rect, double radius)
+    {
+        var path = new XGraphicsPath();
+        path.AddArc(rect.X, rect.Y, radius * 2, radius * 2, 180, 90);
+        path.AddArc(rect.X + rect.Width - radius * 2, rect.Y, radius * 2, radius * 2, 270, 90);
+        path.AddArc(rect.X + rect.Width - radius * 2, rect.Y + rect.Height - radius * 2, radius * 2, radius * 2, 0, 90);
+        path.AddArc(rect.X, rect.Y + rect.Height - radius * 2, radius * 2, radius * 2, 90, 90);
+        path.CloseFigure();
+        gfx.DrawPath(pen, path);
+    }
+    
+    private XColor GetColorFromBrush(XBrush brush)
+    {
+        return borderColor switch
+        {
+            "Red" => XColors.Red,
+            "Blue" => XColors.Blue,
+            "Green" => XColors.Green,
+            "Black" => XColors.Black,
+            "Gray" => XColors.Gray,
+            "Orange" => XColors.Orange,
+            "Purple" => XColors.Purple,
+            "Yellow" => XColors.Yellow,
+            "White" => XColors.White,
+            _ => XColors.Red
+        };
+    }
+    
+    private XPoint GetPosition(string position, double pageWidth, double pageHeight, XSize textSize)
+    {
+        const double margin = 20;
+        
+        return position switch
+        {
+            "TopLeft" => new XPoint(margin, margin + textSize.Height),
+            "TopCenter" => new XPoint((pageWidth - textSize.Width) / 2, margin + textSize.Height),
+            "TopRight" => new XPoint(pageWidth - textSize.Width - margin, margin + textSize.Height),
+            "Center" => new XPoint((pageWidth - textSize.Width) / 2, (pageHeight + textSize.Height) / 2),
+            "BottomLeft" => new XPoint(margin, pageHeight - margin),
+            "BottomCenter" => new XPoint((pageWidth - textSize.Width) / 2, pageHeight - margin),
+            "BottomRight" => new XPoint(pageWidth - textSize.Width - margin, pageHeight - margin),
+            _ => new XPoint(margin, margin + textSize.Height)
+        };
+    }
+    
+    private string GetPdfDataUrl(byte[] pdfBytes)
+    {
+        var base64 = Convert.ToBase64String(pdfBytes);
+        return $"data:application/pdf;base64,{base64}";
+    }
+    
+    private async Task DownloadStampedPdf()
+    {
+        if (stampedPdfBytes == null) return;
+        
+        try
+        {
+            var fileName = $"stamped_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            var base64 = Convert.ToBase64String(stampedPdfBytes);
+            
+            await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Download error: {ex.Message}";
+        }
+    }
+}
