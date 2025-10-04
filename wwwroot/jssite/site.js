@@ -1,8 +1,5 @@
 window.downloadFile = function (fileName, base64Data) {
     try {
-        // Remove any whitespace and ensure clean base64
-        base64Data = base64Data.replace(/\s/g, '');
-        
         // Convert base64 to blob
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
@@ -17,17 +14,21 @@ window.downloadFile = function (fileName, base64Data) {
         const link = document.createElement('a');
         link.href = url;
         link.download = fileName;
+        link.style.display = 'none';
+        
+        // Add to DOM and trigger click
         document.body.appendChild(link);
         link.click();
         
-        // Cleanup
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        // Cleanup after a delay
+        setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }, 100);
         
         return true;
     } catch (error) {
         console.error('Download error:', error);
-        alert('Error downloading file: ' + error.message);
         return false;
     }
 }
