@@ -372,34 +372,25 @@
                             </div>
                         }
                         
-                        <div class="mb-3">
-                            <label class="form-label">Text Rotation</label>
-                            <div class="rotation-selector" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-width: 400px; margin-bottom: 10px;">
-                                <button type="button" class="btn btn-sm @(textRotation == 0 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 0'>
-                                    0°
-                                </button>
-                                <button type="button" class="btn btn-sm @(textRotation == 45 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 45'>
-                                    45°
-                                </button>
-                                <button type="button" class="btn btn-sm @(textRotation == 90 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 90'>
-                                    90°
-                                </button>
-                                <button type="button" class="btn btn-sm @(textRotation == 135 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 135'>
-                                    135°
-                                </button>
-                                <button type="button" class="btn btn-sm @(textRotation == -45 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -45'>
-                                    -45°
-                                </button>
-                                <button type="button" class="btn btn-sm @(textRotation == -90 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -90'>
-                                    -90°
-                                </button>
-                                <button type="button" class="btn btn-sm @(textRotation == -135 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -135'>
-                                    -135°
-                                </button>
-                            </div>
-                            <small class="text-muted">Select rotation angle for stamp text</small>
-                        </div>
-                        
+						<div class="mb-3">
+							<label class="form-label">Text Rotation</label>
+							<div class="d-flex align-items-center gap-3">
+								<button type="button" class="btn btn-outline-secondary" @onclick="RotateCounterClockwise">
+									↶ -45°
+								</button>
+								<div class="text-center">
+									<strong style="font-size: 1.5rem;">@textRotation°</strong>
+									<div><small class="text-muted">Current rotation</small></div>
+								</div>
+								<button type="button" class="btn btn-outline-secondary" @onclick="RotateClockwise">
+									↷ +45°
+								</button>
+								<button type="button" class="btn btn-sm btn-outline-danger" @onclick="ResetRotation">
+									Reset
+								</button>
+							</div>
+							<small class="text-muted">Click buttons to rotate in 45° increments</small>
+						</div>                        
                         <div class="mb-3">
                             <label class="form-label">Color</label>
                             <select class="form-select" @bind="stampColor" @bind:event="oninput">
@@ -1303,7 +1294,7 @@
         var point = GetPosition(position, page.Width, page.Height, textSize, angle);
         
         gfx.TranslateTransform(point.X, point.Y);
-        gfx.RotateTransform(-angle);
+        gfx.RotateTransform(angle );
         
         var startX = -maxWidth / 2;
         var startY = -totalHeight / 2;
@@ -1877,5 +1868,25 @@ private string GetPositionBoxStyle(string position)
     var colorCode = GetColorCode(stampColor);
     
     return $"position: absolute; top: {top}; left: {left}; transform: translate(-50%, -50%) rotate({textRotation}deg); width: 40px; height: 30px; border: 2px solid {colorCode}; background-color: {colorCode}20; border-radius: 3px;";
+}
+private void RotateClockwise()
+{
+    textRotation += 45;
+    // Keep rotation between -180 and 180
+    if (textRotation > 180)
+        textRotation -= 360;
+}
+
+private void RotateCounterClockwise()
+{
+    textRotation -= 45;
+    // Keep rotation between -180 and 180
+    if (textRotation < -180)
+        textRotation += 360;
+}
+
+private void ResetRotation()
+{
+    textRotation = 0;
 }
 }
