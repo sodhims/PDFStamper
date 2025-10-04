@@ -157,6 +157,26 @@
                         
                         <div class="mb-3">
                             <label class="form-label">Position</label>
+                            <div class="position-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 300px; margin-bottom: 10px;">
+                                <button type="button" class="btn btn-sm @(stampPosition == "TopLeft" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopLeft"'>
+                                    ↖ TL
+                                </button>
+                                <button type="button" class="btn btn-sm @(stampPosition == "TopCenter" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopCenter"'>
+                                    ↑ TC
+                                </button>
+                                <button type="button" class="btn btn-sm @(stampPosition == "TopRight" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopRight"'>
+                                    ↗ TR
+                                </button>
+                                <button type="button" class="btn btn-sm @(stampPosition == "BottomLeft" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "BottomLeft"'>
+                                    ↙ BL
+                                </button>
+                                <button type="button" class="btn btn-sm @(stampPosition == "Center" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "Center"'>
+                                    ● C
+                                </button>
+                                <button type="button" class="btn btn-sm @(stampPosition == "BottomRight" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "BottomRight"'>
+                                    ↘ BR
+                                </button>
+                            </div>
                             <select class="form-select" @bind="stampPosition">
                                 <option value="TopLeft">Top Left</option>
                                 <option value="TopCenter">Top Center</option>
@@ -165,7 +185,49 @@
                                 <option value="BottomLeft">Bottom Left</option>
                                 <option value="BottomCenter">Bottom Center</option>
                                 <option value="BottomRight">Bottom Right</option>
+                                <option value="Custom">Custom Position...</option>
                             </select>
+                        </div>
+                        
+                        @if (stampPosition == "Custom")
+                        {
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6>Custom Position</h6>
+                                    <div class="mb-2">
+                                        <label class="form-label">X Position (0-100%)</label>
+                                        <input type="range" class="form-range" @bind="customX" min="0" max="100" />
+                                        <small>@customX%</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Y Position (0-100%)</label>
+                                        <input type="range" class="form-range" @bind="customY" min="0" max="100" />
+                                        <small>@customY%</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Rotation (-180° to 180°)</label>
+                                        <input type="range" class="form-range" @bind="customRotation" min="-180" max="180" />
+                                        <small>@customRotation°</small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Text Orientation</label>
+                            <select class="form-select" @bind="textOrientation">
+                                <option value="Horizontal">Horizontal (0°)</option>
+                                <option value="Vertical">Vertical Rotated (90°)</option>
+                                <option value="VerticalStacked">Vertical Stacked</option>
+                                <option value="Diagonal45">Diagonal Up-Right (45°)</option>
+                                <option value="DiagonalNeg45">Diagonal Down-Right (-45°)</option>
+                                <option value="Rotated180">Upside Down (180°)</option>
+                                <option value="CornerTopLeft">Corner Top-Left (Vertical Down)</option>
+                                <option value="CornerTopRight">Corner Top-Right (Vertical Down)</option>
+                                <option value="CornerBottomLeft">Corner Bottom-Left (Vertical Up)</option>
+                                <option value="CornerBottomRight">Corner Bottom-Right (Vertical Up)</option>
+                            </select>
+                            <small class="text-muted">Choose how text is oriented</small>
                         </div>
                         
                         <div class="mb-3">
@@ -277,48 +339,46 @@
                             <label class="form-label">Number of Stamps per Page</label>
                             <select class="form-select" @bind="stampsPerPage">
                                 <option value="1">1 Stamp</option>
-                                <option value="2">2 Stamps</option>
+                                <option value="2">2 Stamps (Mirrored)</option>
                                 <option value="3">3 Stamps</option>
                             </select>
+                            @if (stampsPerPage == 2)
+                            {
+                                <small class="text-muted">Second stamp will be mirrored symmetrically across page center</small>
+                            }
                         </div>
                         
-                        @if (stampsPerPage > 1)
+                        @if (stampsPerPage > 2)
                         {
                             <div class="alert alert-info">
                                 <small>
                                     <strong>Multiple Stamps:</strong><br/>
                                     Stamp 1: Current position (@stampPosition)<br/>
-                                    @if (stampsPerPage >= 2)
-                                    {
-                                        <span>
-                                            Stamp 2: 
-                                            <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp2Position">
-                                                <option value="TopLeft">Top Left</option>
-                                                <option value="TopCenter">Top Center</option>
-                                                <option value="TopRight">Top Right</option>
-                                                <option value="Center">Center</option>
-                                                <option value="BottomLeft">Bottom Left</option>
-                                                <option value="BottomCenter">Bottom Center</option>
-                                                <option value="BottomRight">Bottom Right</option>
-                                            </select>
-                                            <br/>
-                                        </span>
-                                    }
-                                    @if (stampsPerPage >= 3)
-                                    {
-                                        <span>
-                                            Stamp 3: 
-                                            <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp3Position">
-                                                <option value="TopLeft">Top Left</option>
-                                                <option value="TopCenter">Top Center</option>
-                                                <option value="TopRight">Top Right</option>
-                                                <option value="Center">Center</option>
-                                                <option value="BottomLeft">Bottom Left</option>
-                                                <option value="BottomCenter">Bottom Center</option>
-                                                <option value="BottomRight">Bottom Right</option>
-                                            </select>
-                                        </span>
-                                    }
+                                    <span>
+                                        Stamp 2: 
+                                        <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp2Position">
+                                            <option value="TopLeft">Top Left</option>
+                                            <option value="TopCenter">Top Center</option>
+                                            <option value="TopRight">Top Right</option>
+                                            <option value="Center">Center</option>
+                                            <option value="BottomLeft">Bottom Left</option>
+                                            <option value="BottomCenter">Bottom Center</option>
+                                            <option value="BottomRight">Bottom Right</option>
+                                        </select>
+                                        <br/>
+                                    </span>
+                                    <span>
+                                        Stamp 3: 
+                                        <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp3Position">
+                                            <option value="TopLeft">Top Left</option>
+                                            <option value="TopCenter">Top Center</option>
+                                            <option value="TopRight">Top Right</option>
+                                            <option value="Center">Center</option>
+                                            <option value="BottomLeft">Bottom Left</option>
+                                            <option value="BottomCenter">Bottom Center</option>
+                                            <option value="BottomRight">Bottom Right</option>
+                                        </select>
+                                    </span>
                                 </small>
                             </div>
                         }
@@ -382,6 +442,7 @@
     
     private string stampText = "CONFIDENTIAL";
     private string stampPosition = "TopRight";
+    private string textOrientation = "Horizontal";
     private int fontSize = 24;
     private string fontFamily = "Arial";
     private string stampColor = "Red";
@@ -400,6 +461,9 @@
     private int stampsPerPage = 1;
     private string stamp2Position = "BottomLeft";
     private string stamp3Position = "BottomRight";
+    private int customX = 50;
+    private int customY = 50;
+    private int customRotation = 0;
     
     private List<string> stampPhrases = new List<string>
     {
@@ -528,13 +592,25 @@
                     
                     var page = document.Pages[pageIndex];
                     
-                    var positions = new List<string> { stampPosition };
-                    if (stampsPerPage >= 2) positions.Add(stamp2Position);
-                    if (stampsPerPage >= 3) positions.Add(stamp3Position);
-                    
-                    foreach (var position in positions)
+                    if (stampsPerPage == 2)
                     {
-                        ApplyStamp(page, position);
+                        // Apply first stamp
+                        ApplyStamp(page, stampPosition);
+                        
+                        // Apply mirrored stamp
+                        var mirroredPosition = GetMirroredPosition(stampPosition);
+                        ApplyStamp(page, mirroredPosition);
+                    }
+                    else
+                    {
+                        var positions = new List<string> { stampPosition };
+                        if (stampsPerPage >= 2) positions.Add(stamp2Position);
+                        if (stampsPerPage >= 3) positions.Add(stamp3Position);
+                        
+                        foreach (var position in positions)
+                        {
+                            ApplyStamp(page, position);
+                        }
                     }
                 }
                 
@@ -566,6 +642,67 @@
         var lines = fullText.Replace("\\n", "\n").Split('\n');
         var lineHeight = font.Height;
         
+        // Apply text orientation
+        ApplyTextWithOrientation(gfx, lines, font, brush, lineHeight, position, page);
+    }
+    
+    private void ApplyTextWithOrientation(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
+    {
+        var state = gfx.Save();
+        
+        try
+        {
+            switch (textOrientation)
+            {
+                case "Horizontal":
+                    DrawHorizontalText(gfx, lines, font, brush, lineHeight, position, page);
+                    break;
+                    
+                case "Vertical":
+                    DrawRotatedText(gfx, lines, font, brush, lineHeight, position, page, 90);
+                    break;
+                    
+                case "VerticalStacked":
+                    DrawStackedVerticalText(gfx, lines, font, brush, lineHeight, position, page);
+                    break;
+                    
+                case "Diagonal45":
+                    DrawRotatedText(gfx, lines, font, brush, lineHeight, position, page, -45);
+                    break;
+                    
+                case "DiagonalNeg45":
+                    DrawRotatedText(gfx, lines, font, brush, lineHeight, position, page, 45);
+                    break;
+                    
+                case "Rotated180":
+                    DrawRotatedText(gfx, lines, font, brush, lineHeight, position, page, 180);
+                    break;
+                    
+                case "CornerTopLeft":
+                    DrawCornerDiagonal(gfx, lines, font, brush, page, "TopLeft");
+                    break;
+                    
+                case "CornerTopRight":
+                    DrawCornerDiagonal(gfx, lines, font, brush, page, "TopRight");
+                    break;
+                    
+                case "CornerBottomLeft":
+                    DrawCornerDiagonal(gfx, lines, font, brush, page, "BottomLeft");
+                    break;
+                    
+                case "CornerBottomRight":
+                    DrawCornerDiagonal(gfx, lines, font, brush, page, "BottomRight");
+                    break;
+            }
+        }
+        finally
+        {
+            gfx.Restore(state);
+        }
+    }
+    
+    private void DrawHorizontalText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
+    {
         var maxWidth = 0.0;
         foreach (var line in lines)
         {
@@ -578,6 +715,14 @@
         var textSize = new XSize(maxWidth, totalHeight);
         
         var point = GetPosition(position, page.Width, page.Height, textSize);
+        
+        // Apply custom rotation if in custom mode
+        if (position == "Custom" && customRotation != 0)
+        {
+            gfx.TranslateTransform(point.X, point.Y);
+            gfx.RotateTransform(customRotation);
+            point = new XPoint(0, 0);
+        }
         
         if (showBorder)
         {
@@ -592,6 +737,119 @@
         }
     }
     
+    private void DrawRotatedText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page, double angle)
+    {
+        var maxWidth = 0.0;
+        foreach (var line in lines)
+        {
+            var lineSize = gfx.MeasureString(line, font);
+            if (lineSize.Width > maxWidth)
+                maxWidth = lineSize.Width;
+        }
+        
+        var totalHeight = lineHeight * lines.Length;
+        var textSize = new XSize(maxWidth, totalHeight);
+        
+        var point = GetPosition(position, page.Width, page.Height, textSize);
+        
+        // Adjust position for diagonal up-right to keep text on page
+        if (angle == -45)
+        {
+            var diagOffset = maxWidth * 0.7; // Approximate offset for 45 degree angle
+            point = new XPoint(point.X + diagOffset, point.Y + diagOffset);
+        }
+        
+        // Move to position and rotate
+        gfx.TranslateTransform(point.X, point.Y);
+        gfx.RotateTransform(angle);
+        
+        if (showBorder)
+        {
+            DrawBorderEffect(gfx, new XPoint(0, 0), textSize, lines, font);
+        }
+        
+        var currentY = 0.0;
+        foreach (var line in lines)
+        {
+            gfx.DrawString(line, font, brush, new XPoint(0, currentY), XStringFormats.TopLeft);
+            currentY += lineHeight;
+        }
+    }
+    
+    private void DrawStackedVerticalText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
+    {
+        var fullText = string.Join("", lines);
+        var charSpacing = fontSize * 1.2;
+        var textHeight = fullText.Length * charSpacing;
+        var textWidth = fontSize;
+        
+        var point = GetPosition(position, page.Width, page.Height, new XSize(textWidth, textHeight));
+        
+        if (showBorder)
+        {
+            var borderRect = new XRect(point.X - borderPadding, point.Y - borderPadding, 
+                textWidth + borderPadding * 2, textHeight + borderPadding * 2);
+            var pen = new XPen(GetBrush(borderColor), borderWidth);
+            gfx.DrawRectangle(pen, XBrushes.Transparent, borderRect);
+        }
+        
+        var currentY = point.Y;
+        foreach (char c in fullText)
+        {
+            gfx.DrawString(c.ToString(), font, brush, new XPoint(point.X, currentY), XStringFormats.TopLeft);
+            currentY += charSpacing;
+        }
+    }
+    
+    private void DrawCornerDiagonal(XGraphics gfx, string[] lines, XFont font, XBrush brush, PdfPage page, string corner)
+    {
+        var fullText = string.Join(" ", lines);
+        var textWidth = gfx.MeasureString(fullText, font).Width;
+        var textHeight = font.Height;
+        
+        double angle = 0;
+        XPoint startPoint;
+        var margin = 40.0; // Margin from edge
+        
+        switch (corner)
+        {
+            case "TopLeft":
+                // Vertical down from top-left (rotated 90 degrees clockwise)
+                angle = 90;
+                startPoint = new XPoint(margin + textHeight / 2, margin + textWidth / 2);
+                break;
+                
+            case "TopRight":
+                // Vertical down from top-right (rotated 90 degrees clockwise)
+                angle = 90;
+                startPoint = new XPoint(page.Width - margin - textHeight / 2, margin + textWidth / 2);
+                break;
+                
+            case "BottomLeft":
+                // Vertical up from bottom-left (rotated 90 degrees counter-clockwise)
+                angle = -90;
+                startPoint = new XPoint(margin + textHeight / 2, page.Height - margin - textWidth / 2);
+                break;
+                
+            case "BottomRight":
+                // Vertical up from bottom-right (rotated 90 degrees counter-clockwise)
+                angle = -90;
+                startPoint = new XPoint(page.Width - margin - textHeight / 2, page.Height - margin - textWidth / 2);
+                break;
+                
+            default:
+                startPoint = new XPoint(margin, margin);
+                break;
+        }
+        
+        gfx.TranslateTransform(startPoint.X, startPoint.Y);
+        gfx.RotateTransform(angle);
+        
+        // Draw text centered on the rotation point
+        var offset = -textWidth / 2;
+        gfx.DrawString(fullText, font, brush, new XPoint(offset, -textHeight / 2), XStringFormats.TopLeft);
+    }
+    
     private string PrepareTextWithSymbol()
     {
         if (string.IsNullOrEmpty(selectedSymbol))
@@ -604,6 +862,22 @@
             "Above" => $"{selectedSymbol}\n{stampText}",
             "Below" => $"{stampText}\n{selectedSymbol}",
             _ => stampText
+        };
+    }
+    
+    private string GetMirroredPosition(string position)
+    {
+        return position switch
+        {
+            "TopLeft" => "BottomRight",
+            "TopCenter" => "BottomCenter",
+            "TopRight" => "BottomLeft",
+            "Center" => "Center",
+            "BottomLeft" => "TopRight",
+            "BottomCenter" => "TopCenter",
+            "BottomRight" => "TopLeft",
+            "Custom" => "Custom",
+            _ => "BottomRight"
         };
     }
     
@@ -753,6 +1027,14 @@
     private XPoint GetPosition(string position, double pageWidth, double pageHeight, XSize textSize)
     {
         const double margin = 20;
+        
+        if (position == "Custom")
+        {
+            // Use percentage-based custom position
+            var x = pageWidth * customX / 100.0;
+            var y = pageHeight * customY / 100.0;
+            return new XPoint(x, y);
+        }
         
         return position switch
         {
