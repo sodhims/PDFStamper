@@ -143,6 +143,68 @@
                         </div>
                         
                         <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @bind="includeDateTimeStamp" id="includeDateTimeStamp">
+                                <label class="form-check-label" for="includeDateTimeStamp">
+                                    <strong>Include Date/Time Stamp</strong>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        @if (includeDateTimeStamp)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6>Date/Time Stamp Settings</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Date/Time Format</label>
+                                        <select class="form-select" @bind="dateTimeFormat">
+                                            <option value="yyyy-MM-dd HH:mm:ss">2025-01-15 14:30:45</option>
+                                            <option value="MM/dd/yyyy hh:mm tt">01/15/2025 02:30 PM</option>
+                                            <option value="dd/MM/yyyy HH:mm">15/01/2025 14:30</option>
+                                            <option value="yyyy-MM-dd">2025-01-15 (Date Only)</option>
+                                            <option value="MMMM dd, yyyy">January 15, 2025</option>
+                                            <option value="dddd, MMMM dd, yyyy">Monday, January 15, 2025</option>
+                                            <option value="HH:mm:ss">14:30:45 (Time Only)</option>
+                                            <option value="hh:mm tt">02:30 PM (Time Only)</option>
+                                        </select>
+                                        <small class="text-muted">Preview: @DateTime.Now.ToString(dateTimeFormat)</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Date/Time Position</label>
+                                        <select class="form-select" @bind="dateTimePosition">
+                                            <option value="Above">Above main text</option>
+                                            <option value="Below">Below main text</option>
+                                            <option value="Before">Before main text (same line)</option>
+                                            <option value="After">After main text (same line)</option>
+                                            <option value="Replace">Replace main text</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Date/Time Font Size</label>
+                                        <input type="number" class="form-control" @bind="dateTimeFontSize" min="6" max="72" />
+                                        <small class="text-muted">Independent from main text size</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Date/Time Font Family</label>
+                                        <select class="form-select" @bind="dateTimeFontFamily">
+                                            <option value="Arial">Arial</option>
+                                            <option value="Times New Roman">Times New Roman</option>
+                                            <option value="Courier New">Courier New</option>
+                                            <option value="Verdana">Verdana</option>
+                                            <option value="Georgia">Georgia</option>
+                                            <option value="Consolas">Consolas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="mb-3">
                             <label class="form-label">Add Symbol</label>
                             <select class="form-select" @bind="selectedSymbol">
                                 <option value="">-- No Symbol --</option>
@@ -520,14 +582,14 @@
                             {
                                 <h6>Stamped Preview</h6>
                                 <iframe src="@(GetPdfDataUrl(currentBatchFile.StampedBytes))" 
-                                        style="width: 100%; height: 600px; border: 1px solid #ddd;">
+                                        style="width: 100%; height: 350px; border: 1px solid #ddd;">
                                 </iframe>
                             }
                             else
                             {
                                 <h6>Original Preview</h6>
                                 <iframe src="@(GetPdfDataUrl(currentBatchFile.OriginalBytes))" 
-                                        style="width: 100%; height: 600px; border: 1px solid #ddd;">
+                                        style="width: 100%; height: 350px; border: 1px solid #ddd;">
                                 </iframe>
                             }
                         }
@@ -540,7 +602,7 @@
                     <div class="card-body">
                         <h6>Original PDF Preview</h6>
                         <iframe src="@GetPdfDataUrl(originalPdfBytes)" 
-                                style="width: 100%; height: 400px; border: 1px solid #ddd;">
+                                style="width: 100%; height: 350px; border: 1px solid #ddd;">
                         </iframe>
                     </div>
                 </div>
@@ -551,7 +613,7 @@
                         <div class="card-body">
                             <h6>Stamped PDF Preview</h6>
                             <iframe src="@GetPdfDataUrl(stampedPdfBytes)" 
-                                    style="width: 100%; height: 400px; border: 1px solid #ddd;">
+                                    style="width: 100%; height: 350px; border: 1px solid #ddd;">
                             </iframe>
                         </div>
                     </div>
@@ -567,6 +629,64 @@
             {
                 <div class="alert alert-info">
                     Please select a PDF file to begin.
+                </div>
+            }
+            
+            @if (pdfLoaded || batchFiles.Any())
+            {
+                <!-- Stamp Preview Panels -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title text-center">Stamp Preview</h6>
+                                <div style="min-height: 150px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; border-radius: 5px; padding: 15px; background-color: #f8f9fa; position: relative; overflow: hidden;">
+                                    <div style="transform: rotate(@(textRotation)deg); display: inline-block; position: relative;">
+                                        <div style="font-family: @GetPreviewFontFamily(); text-align: center;">
+                                            @foreach (var line in GetPreviewLines())
+                                            {
+                                                var lineStyle = GetPreviewLineStyle(line);
+                                                <div style="@lineStyle">@line</div>
+                                            }
+                                        </div>
+                                        @if (showBorder && borderStyle != "Outline" && borderStyle != "Shadow" && borderStyle != "Glow" && borderStyle != "Highlight")
+                                        {
+                                            <div style="position: absolute; top: -@(borderPadding)px; left: -@(borderPadding)px; right: -@(borderPadding)px; bottom: -@(borderPadding)px; border: @(borderWidth)px @(borderStyle == "Dashed" ? "dashed" : "solid") @GetColorCode(borderColor); border-radius: @(borderStyle == "Rounded" ? cornerRadius + "px" : "0"); pointer-events: none;"></div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title text-center">Position Preview</h6>
+                                <div style="width: 100%; aspect-ratio: 8.5/11; border: 2px solid #dee2e6; border-radius: 5px; background-color: white; position: relative;">
+                                    @{
+                                        var positions = new List<string> { stampPosition };
+                                        if (stampsPerPage == 2)
+                                        {
+                                            positions.Add(GetMirroredPosition(stampPosition));
+                                        }
+                                        else if (stampsPerPage == 3)
+                                        {
+                                            positions.Add(stamp2Position);
+                                            positions.Add(stamp3Position);
+                                        }
+                                        
+                                        foreach (var pos in positions)
+                                        {
+                                            var positionStyle = GetPositionBoxStyle(pos);
+                                            <div style="@positionStyle"></div>
+                                        }
+                                    }
+                                </div>
+                                <small class="text-muted d-block text-center mt-2">Red boxes show stamp locations</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
         </div>
@@ -622,6 +742,13 @@
     private int customX = 50;
     private int customY = 50;
     private int customRotation = 0;
+    
+    // Date/Time stamp settings
+    private bool includeDateTimeStamp = false;
+    private string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+    private string dateTimePosition = "Below";
+    private int dateTimeFontSize = 14;
+    private string dateTimeFontFamily = "Arial";
     
     private List<string> stampPhrases = new List<string>
     {
@@ -923,17 +1050,42 @@
     
     private void DrawRotatedText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page, double angle)
     {
+        var hasDateTime = includeDateTimeStamp && dateTimePosition != "Replace";
+        
         var maxWidth = 0.0;
-        foreach (var line in lines)
+        var totalHeight = 0.0;
+        
+        if (hasDateTime && (dateTimePosition == "Above" || dateTimePosition == "Below"))
         {
-            var lineSize = gfx.MeasureString(line, font);
-            if (lineSize.Width > maxWidth)
-                maxWidth = lineSize.Width;
+            var dateTimeFont = new XFont(dateTimeFontFamily, dateTimeFontSize, XFontStyle.Bold);
+            var mainFont = new XFont(fontFamily, fontSize, XFontStyle.Bold);
+            
+            foreach (var line in lines)
+            {
+                var isDateTimeLine = (dateTimePosition == "Above" && line == lines[0]) ||
+                                    (dateTimePosition == "Below" && line == lines[^1]);
+                
+                var currentFont = isDateTimeLine ? dateTimeFont : mainFont;
+                var lineSize = gfx.MeasureString(line, currentFont);
+                
+                if (lineSize.Width > maxWidth)
+                    maxWidth = lineSize.Width;
+                
+                totalHeight += currentFont.Height;
+            }
+        }
+        else
+        {
+            foreach (var line in lines)
+            {
+                var lineSize = gfx.MeasureString(line, font);
+                if (lineSize.Width > maxWidth)
+                    maxWidth = lineSize.Width;
+            }
+            totalHeight = lineHeight * lines.Length;
         }
         
-        var totalHeight = lineHeight * lines.Length;
         var textSize = new XSize(maxWidth, totalHeight);
-        
         var point = GetPosition(position, page.Width, page.Height, textSize, angle);
         
         gfx.TranslateTransform(point.X, point.Y);
@@ -949,28 +1101,68 @@
         }
         
         var currentY = startY;
-        foreach (var line in lines)
+        
+        if (hasDateTime && (dateTimePosition == "Above" || dateTimePosition == "Below"))
         {
-            var lineWidth = gfx.MeasureString(line, font).Width;
-            var lineX = startX + (maxWidth - lineWidth) / 2;
-            gfx.DrawString(line, font, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
-            currentY += lineHeight;
+            var dateTimeFont = new XFont(dateTimeFontFamily, dateTimeFontSize, XFontStyle.Bold);
+            var mainFont = new XFont(fontFamily, fontSize, XFontStyle.Bold);
+            
+            foreach (var line in lines)
+            {
+                var isDateTimeLine = (dateTimePosition == "Above" && line == lines[0]) ||
+                                    (dateTimePosition == "Below" && line == lines[^1]);
+                
+                var currentFont = isDateTimeLine ? dateTimeFont : mainFont;
+                var lineWidth = gfx.MeasureString(line, currentFont).Width;
+                var lineX = startX + (maxWidth - lineWidth) / 2;
+                gfx.DrawString(line, currentFont, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
+                currentY += currentFont.Height;
+            }
+        }
+        else
+        {
+            foreach (var line in lines)
+            {
+                var lineWidth = gfx.MeasureString(line, font).Width;
+                var lineX = startX + (maxWidth - lineWidth) / 2;
+                gfx.DrawString(line, font, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
+                currentY += lineHeight;
+            }
         }
     }
     
     private string PrepareTextWithSymbol()
     {
-        if (string.IsNullOrEmpty(selectedSymbol))
-            return stampText;
+        var mainText = stampText;
         
-        return symbolPosition switch
+        if (!string.IsNullOrEmpty(selectedSymbol))
         {
-            "Before" => $"{selectedSymbol} {stampText}",
-            "After" => $"{stampText} {selectedSymbol}",
-            "Above" => $"{selectedSymbol}\n{stampText}",
-            "Below" => $"{stampText}\n{selectedSymbol}",
-            _ => stampText
-        };
+            mainText = symbolPosition switch
+            {
+                "Before" => $"{selectedSymbol} {stampText}",
+                "After" => $"{stampText} {selectedSymbol}",
+                "Above" => $"{selectedSymbol}\n{stampText}",
+                "Below" => $"{stampText}\n{selectedSymbol}",
+                _ => stampText
+            };
+        }
+        
+        if (includeDateTimeStamp)
+        {
+            var dateTimeText = DateTime.Now.ToString(dateTimeFormat);
+            
+            mainText = dateTimePosition switch
+            {
+                "Above" => $"{dateTimeText}\n{mainText}",
+                "Below" => $"{mainText}\n{dateTimeText}",
+                "Before" => $"{dateTimeText} {mainText}",
+                "After" => $"{mainText} {dateTimeText}",
+                "Replace" => dateTimeText,
+                _ => mainText
+            };
+        }
+        
+        return mainText;
     }
     
     private string GetMirroredPosition(string position)
@@ -1140,10 +1332,8 @@
     {
         const double margin = 30;
         
-        // Calculate the bounding box of the rotated text
         var rotatedBounds = GetRotatedTextBounds(textSize, rotation);
         
-        // Ensure minimum margins to keep text on page
         var safeMargin = Math.Max(margin, Math.Max(rotatedBounds.Width, rotatedBounds.Height) / 2 + 10);
         
         if (position == "Custom")
@@ -1256,5 +1446,69 @@
         {
             errorMessage = $"Download error: {ex.Message}";
         }
+    }
+    
+    // Stamp Preview Methods
+    private string[] GetPreviewLines()
+    {
+        var fullText = PrepareTextWithSymbol();
+        return fullText.Replace("\\n", "\n").Split('\n');
+    }
+    
+    private string GetPreviewLineStyle(string line)
+    {
+        var isDateTimeLine = false;
+        if (includeDateTimeStamp && dateTimePosition != "Replace")
+        {
+            var lines = GetPreviewLines();
+            isDateTimeLine = (dateTimePosition == "Above" && line == lines[0]) ||
+                            (dateTimePosition == "Below" && line == lines[^1]);
+        }
+        
+        var size = isDateTimeLine ? dateTimeFontSize : fontSize;
+        var family = isDateTimeLine ? dateTimeFontFamily : fontFamily;
+        var color = GetColorCode(stampColor);
+        var opacity = stampOpacity / 100.0;
+        
+        return $"font-size: {size}px; font-family: {family}; color: {color}; opacity: {opacity}; font-weight: bold; line-height: 1.3; white-space: nowrap;";
+    }
+    
+    private string GetPreviewFontFamily()
+    {
+        return fontFamily;
+    }
+    
+    private string GetColorCode(string colorName)
+    {
+        return colorName switch
+        {
+            "Red" => "#FF0000",
+            "Blue" => "#0000FF",
+            "Green" => "#008000",
+            "Black" => "#000000",
+            "Gray" => "#808080",
+            "Orange" => "#FFA500",
+            "Purple" => "#800080",
+            "Yellow" => "#FFFF00",
+            "White" => "#FFFFFF",
+            _ => "#FF0000"
+        };
+    }
+    
+    private string GetPositionBoxStyle(string position)
+    {
+        var (top, left) = position switch
+        {
+            "TopLeft" => ("5%", "5%"),
+            "TopCenter" => ("5%", "50%"),
+            "TopRight" => ("5%", "95%"),
+            "Center" => ("50%", "50%"),
+            "BottomLeft" => ("95%", "5%"),
+            "BottomCenter" => ("95%", "50%"),
+            "BottomRight" => ("95%", "95%"),
+            _ => ("50%", "50%")
+        };
+        
+        return $"position: absolute; top: {top}; left: {left}; transform: translate(-50%, -50%); width: 40px; height: 30px; border: 2px solid #dc3545; background-color: rgba(220, 53, 69, 0.2); border-radius: 3px;";
     }
 }
