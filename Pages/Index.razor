@@ -51,7 +51,7 @@
     }
     
     <div class="row mt-4">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Upload PDF(s)</h5>
@@ -118,10 +118,14 @@
                     }
                 </div>
             </div>
-            
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
             @if (pdfLoaded || batchFiles.Any())
             {
-                <div class="card mt-3">
+                <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Stamp Settings</h5>
                         
@@ -261,33 +265,33 @@
                             </div>
                         }
                         
-						<div class="mb-3">
-							<label class="form-label">Text Rotation</label>
-							<div class="rotation-selector" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-width: 400px; margin-bottom: 10px;">
-								<button type="button" class="btn btn-sm @(textRotation == 0 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 0'>
-									0°
-								</button>
-								<button type="button" class="btn btn-sm @(textRotation == 45 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 45'>
-									45°
-								</button>
-								<button type="button" class="btn btn-sm @(textRotation == 90 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 90'>
-									90°
-								</button>
-								<button type="button" class="btn btn-sm @(textRotation == 135 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 135'>
-									135°
-								</button>
-								<button type="button" class="btn btn-sm @(textRotation == -45 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -45'>
-									-45°
-								</button>
-								<button type="button" class="btn btn-sm @(textRotation == -90 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -90'>
-									-90°
-								</button>
-								<button type="button" class="btn btn-sm @(textRotation == -135 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -135'>
-									-135°
-								</button>
-							</div>
-							<small class="text-muted">Select rotation angle for stamp text</small>
-						</div>                       
+                        <div class="mb-3">
+                            <label class="form-label">Text Rotation</label>
+                            <div class="rotation-selector" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-width: 400px; margin-bottom: 10px;">
+                                <button type="button" class="btn btn-sm @(textRotation == 0 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 0'>
+                                    0°
+                                </button>
+                                <button type="button" class="btn btn-sm @(textRotation == 45 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 45'>
+                                    45°
+                                </button>
+                                <button type="button" class="btn btn-sm @(textRotation == 90 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 90'>
+                                    90°
+                                </button>
+                                <button type="button" class="btn btn-sm @(textRotation == 135 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = 135'>
+                                    135°
+                                </button>
+                                <button type="button" class="btn btn-sm @(textRotation == -45 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -45'>
+                                    -45°
+                                </button>
+                                <button type="button" class="btn btn-sm @(textRotation == -90 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -90'>
+                                    -90°
+                                </button>
+                                <button type="button" class="btn btn-sm @(textRotation == -135 ? "btn-primary" : "btn-outline-secondary")" @onclick='() => textRotation = -135'>
+                                    -135°
+                                </button>
+                            </div>
+                            <small class="text-muted">Select rotation angle for stamp text</small>
+                        </div>
                         
                         <div class="mb-3">
                             <label class="form-label">Color</label>
@@ -450,7 +454,6 @@
                         
                         @if (batchMode)
                         {
-                            <!-- Batch Mode: 3 buttons -->
                             <button class="btn btn-primary" @onclick="StampPdf" disabled="@(isProcessing || currentBatchIndex >= batchFiles.Count)">
                                 @if (isProcessing)
                                 {
@@ -473,16 +476,16 @@
                                     Download All (@batchFiles.Count files)
                                 </button>
                             }
-							@if (batchMode && batchFiles.Any(f => f.StampedBytes != null && !f.Downloaded))
-							{
-								<div class="alert alert-warning mt-2">
-									<small><strong>Note:</strong> When downloading multiple files, your browser may ask for permission. Please click "Allow" when prompted.</small>
-								</div>
-							}
+                            
+                            @if (batchFiles.Any(f => f.StampedBytes != null && !f.Downloaded))
+                            {
+                                <div class="alert alert-warning mt-3 mb-0">
+                                    <small><strong>Note:</strong> When downloading multiple files, your browser may ask for permission to allow multiple downloads. Please click "Allow" when prompted to enable all downloads.</small>
+                                </div>
+                            }
                         }
                         else
                         {
-                            <!-- Single File Mode: 2 buttons -->
                             <button class="btn btn-primary" @onclick="StampPdf" disabled="@isProcessing">
                                 @if (isProcessing)
                                 {
@@ -504,43 +507,40 @@
         </div>
         
         <div class="col-md-6">
-            @if (batchMode && currentBatchFile != null)
+            @if (batchMode && batchFiles.Any())
             {
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Current File: @currentBatchFile.Name</h5>
-                        <p class="text-muted">File @(currentBatchIndex + 1) of @batchFiles.Count (@currentBatchFile.PageCount page(s))</p>
-                        
-                        @if (currentBatchFile.StampedBytes != null)
+                        @if (currentBatchFile != null)
                         {
-                            <h6>Stamped Preview</h6>
-                            <iframe src="@(GetPdfDataUrl(currentBatchFile.StampedBytes))" 
-                                    style="width: 100%; height: 600px; border: 1px solid #ddd;"
-                                    key="@($"stamped-{currentBatchIndex}")">
-                            </iframe>
-                        }
-                        else if (currentBatchFile.OriginalBytes != null && currentBatchFile.OriginalBytes.Length > 0)
-                        {
-                            <h6>Original Preview</h6>
-                            <iframe src="@(GetPdfDataUrl(currentBatchFile.OriginalBytes))" 
-                                    style="width: 100%; height: 600px; border: 1px solid #ddd;"
-                                    key="@($"original-{currentBatchIndex}")">
-                            </iframe>
-                        }
-                        else
-                        {
-                            <div class="alert alert-warning">No preview available for this file.</div>
+                            <h5 class="card-title">Current File: @currentBatchFile.Name</h5>
+                            <p class="text-muted">File @(currentBatchIndex + 1) of @batchFiles.Count (@currentBatchFile.PageCount page(s))</p>
+                            
+                            @if (currentBatchFile.StampedBytes != null)
+                            {
+                                <h6>Stamped Preview</h6>
+                                <iframe src="@(GetPdfDataUrl(currentBatchFile.StampedBytes))" 
+                                        style="width: 100%; height: 600px; border: 1px solid #ddd;">
+                                </iframe>
+                            }
+                            else
+                            {
+                                <h6>Original Preview</h6>
+                                <iframe src="@(GetPdfDataUrl(currentBatchFile.OriginalBytes))" 
+                                        style="width: 100%; height: 600px; border: 1px solid #ddd;">
+                                </iframe>
+                            }
                         }
                     </div>
                 </div>
             }
-            else if (pdfLoaded && originalPdfBytes != null && !batchMode)
+            else if (!batchMode && pdfLoaded && originalPdfBytes != null)
             {
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Original PDF Preview</h5>
+                        <h6>Original PDF Preview</h6>
                         <iframe src="@GetPdfDataUrl(originalPdfBytes)" 
-                                style="width: 100%; height: 500px; border: 1px solid #ddd;">
+                                style="width: 100%; height: 400px; border: 1px solid #ddd;">
                         </iframe>
                     </div>
                 </div>
@@ -549,21 +549,21 @@
                 {
                     <div class="card mt-3">
                         <div class="card-body">
-                            <h5 class="card-title">Stamped PDF Preview</h5>
+                            <h6>Stamped PDF Preview</h6>
                             <iframe src="@GetPdfDataUrl(stampedPdfBytes)" 
-                                    style="width: 100%; height: 500px; border: 1px solid #ddd;">
+                                    style="width: 100%; height: 400px; border: 1px solid #ddd;">
                             </iframe>
                         </div>
                     </div>
                 }
             }
-            else if (batchMode && !batchFiles.Any())
+            else if (batchMode)
             {
                 <div class="alert alert-info">
                     Please select multiple PDF files to begin batch processing.
                 </div>
             }
-            else if (!batchMode && !pdfLoaded)
+            else
             {
                 <div class="alert alert-info">
                     Please select a PDF file to begin.
@@ -588,17 +588,18 @@
     private int currentBatchIndex = 0;
     private BatchPdfFile? currentBatchFile => currentBatchIndex < batchFiles.Count ? batchFiles[currentBatchIndex] : null;
     
-	private class BatchPdfFile
-	{
-		public string Name { get; set; } = "";
-		public byte[] OriginalBytes { get; set; } = Array.Empty<byte>();
-		public byte[]? StampedBytes { get; set; }
-		public int PageCount { get; set; }
-		public bool Downloaded { get; set; } = false;  // Add this
-	}    
+    private class BatchPdfFile
+    {
+        public string Name { get; set; } = "";
+        public byte[] OriginalBytes { get; set; } = Array.Empty<byte>();
+        public byte[]? StampedBytes { get; set; }
+        public int PageCount { get; set; }
+        public bool Downloaded { get; set; } = false;
+    }
+    
     private string stampText = "CONFIDENTIAL";
     private string stampPosition = "TopRight";
-	private int textRotation = 0;
+    private int textRotation = 0;
     private int fontSize = 24;
     private string fontFamily = "Arial";
     private string stampColor = "Red";
@@ -734,11 +735,11 @@
         
         try
         {
-            foreach (var file in e.GetMultipleFiles(20)) // Max 20 files
+            foreach (var file in e.GetMultipleFiles(20))
             {
                 if (file.ContentType != "application/pdf")
                 {
-                    continue; // Skip non-PDF files
+                    continue;
                 }
                 
                 using var memoryStream = new MemoryStream();
@@ -769,7 +770,6 @@
     
     private async Task StampPdf()
     {
-        // Determine which PDF to process
         byte[]? pdfToProcess = null;
         
         if (batchMode && currentBatchFile != null)
@@ -788,7 +788,7 @@
         
         try
         {
-            byte[] resultBytes = null;
+            byte[]? resultBytes = null;
             
             await Task.Run(() =>
             {
@@ -829,7 +829,6 @@
                 resultBytes = outputStream.ToArray();
             });
             
-            // Store result in appropriate location
             if (batchMode && currentBatchFile != null)
             {
                 currentBatchFile.StampedBytes = resultBytes;
@@ -849,29 +848,29 @@
         }
     }
     
-private async Task DownloadCurrentFile()
-{
-    if (currentBatchFile?.StampedBytes == null) return;
+    private async Task DownloadCurrentFile()
+    {
+        if (currentBatchFile?.StampedBytes == null) return;
+        
+        try
+        {
+            var fileName = $"stamped_{Path.GetFileNameWithoutExtension(currentBatchFile.Name)}.pdf";
+            var base64 = Convert.ToBase64String(currentBatchFile.StampedBytes);
+            
+            errorMessage = string.Empty;
+            
+            await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+            
+            currentBatchFile.Downloaded = true;
+            
+            await Task.Delay(100);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Download error: {ex.Message}";
+        }
+    }
     
-    try
-    {
-        var fileName = $"stamped_{Path.GetFileNameWithoutExtension(currentBatchFile.Name)}.pdf";
-        var base64 = Convert.ToBase64String(currentBatchFile.StampedBytes);
-        
-        errorMessage = string.Empty;
-        
-        await JS.InvokeVoidAsync("downloadFile", fileName, base64);
-        
-        // Mark as downloaded
-        currentBatchFile.Downloaded = true;
-        
-        await Task.Delay(100);
-    }
-    catch (Exception ex)
-    {
-        errorMessage = $"Download error: {ex.Message}";
-    }
-}
     private void NextFile()
     {
         if (currentBatchIndex < batchFiles.Count - 1)
@@ -880,20 +879,49 @@ private async Task DownloadCurrentFile()
         }
     }
     
-
-	private void ApplyTextWithOrientation(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
-	{
-		var state = gfx.Save();
-		
-		try
-		{
-			DrawRotatedText(gfx, lines, font, brush, lineHeight, position, page, textRotation);
-		}
-		finally
-		{
-			gfx.Restore(state);
-		}
-	}    private void DrawHorizontalText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
+    private void ApplyStamp(PdfPage page, string position)
+    {
+        using var gfx = XGraphics.FromPdfPage(page);
+        
+        var font = new XFont(fontFamily, fontSize, XFontStyle.Bold);
+        var brush = GetBrush(stampColor);
+        
+        var fullText = PrepareTextWithSymbol();
+        
+        var lines = fullText.Replace("\\n", "\n").Split('\n');
+        var lineHeight = font.Height;
+        
+        ApplyTextWithOrientation(gfx, lines, font, brush, lineHeight, position, page);
+    }
+    
+    private void ApplyTextWithOrientation(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
+    {
+        var state = gfx.Save();
+        
+        try
+        {
+            DrawRotatedText(gfx, lines, font, brush, lineHeight, position, page, textRotation);
+        }
+        finally
+        {
+            gfx.Restore(state);
+        }
+    }
+    
+    private XRect GetRotatedTextBounds(XSize textSize, double angle)
+    {
+        var rad = angle * Math.PI / 180.0;
+        
+        var cos = Math.Abs(Math.Cos(rad));
+        var sin = Math.Abs(Math.Sin(rad));
+        
+        var width = textSize.Width * cos + textSize.Height * sin;
+        var height = textSize.Width * sin + textSize.Height * cos;
+        
+        return new XRect(0, 0, width, height);
+    }
+    
+    private void DrawRotatedText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page, double angle)
     {
         var maxWidth = 0.0;
         foreach (var line in lines)
@@ -906,140 +934,28 @@ private async Task DownloadCurrentFile()
         var totalHeight = lineHeight * lines.Length;
         var textSize = new XSize(maxWidth, totalHeight);
         
-        var point = GetPosition(position, page.Width, page.Height, textSize);
+        var point = GetPosition(position, page.Width, page.Height, textSize, angle);
         
-        // Apply custom rotation if in custom mode
-        if (position == "Custom" && customRotation != 0)
-        {
-            gfx.TranslateTransform(point.X, point.Y);
-            gfx.RotateTransform(customRotation);
-            point = new XPoint(0, 0);
-        }
+        gfx.TranslateTransform(point.X, point.Y);
+        gfx.RotateTransform(-angle);
+        
+        var startX = -maxWidth / 2;
+        var startY = -totalHeight / 2;
         
         if (showBorder)
         {
-            DrawBorderEffect(gfx, point, textSize, lines, font);
+            var borderTextSize = new XSize(maxWidth, totalHeight);
+            DrawBorderEffect(gfx, new XPoint(startX, startY), borderTextSize, lines, font);
         }
         
-        var currentY = point.Y;
+        var currentY = startY;
         foreach (var line in lines)
         {
-            gfx.DrawString(line, font, brush, new XPoint(point.X, currentY), XStringFormats.TopLeft);
+            var lineWidth = gfx.MeasureString(line, font).Width;
+            var lineX = startX + (maxWidth - lineWidth) / 2;
+            gfx.DrawString(line, font, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
             currentY += lineHeight;
         }
-    }
-    
-	private void DrawRotatedText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page, double angle)
-	{
-		var maxWidth = 0.0;
-		foreach (var line in lines)
-		{
-			var lineSize = gfx.MeasureString(line, font);
-			if (lineSize.Width > maxWidth)
-				maxWidth = lineSize.Width;
-		}
-		
-		var totalHeight = lineHeight * lines.Length;
-		var textSize = new XSize(maxWidth, totalHeight);
-		
-		// Get position accounting for rotation
-		var point = GetPosition(position, page.Width, page.Height, textSize, angle);
-		
-		// Move to position and rotate
-		gfx.TranslateTransform(point.X, point.Y);
-		gfx.RotateTransform(-angle);
-		
-		// Draw text centered on rotation point
-		var startX = -maxWidth / 2;
-		var startY = -totalHeight / 2;
-		
-		if (showBorder)
-		{
-			var borderTextSize = new XSize(maxWidth, totalHeight);
-			DrawBorderEffect(gfx, new XPoint(startX, startY), borderTextSize, lines, font);
-		}
-		
-		var currentY = startY;
-		foreach (var line in lines)
-		{
-			var lineWidth = gfx.MeasureString(line, font).Width;
-			var lineX = startX + (maxWidth - lineWidth) / 2; // Center each line
-			gfx.DrawString(line, font, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
-			currentY += lineHeight;
-		}
-	}
-    private void DrawStackedVerticalText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
-    {
-        var fullText = string.Join("", lines);
-        var charSpacing = fontSize * 1.2;
-        var textHeight = fullText.Length * charSpacing;
-        var textWidth = fontSize;
-        
-        var point = GetPosition(position, page.Width, page.Height, new XSize(textWidth, textHeight));
-        
-        if (showBorder)
-        {
-            var borderRect = new XRect(point.X - borderPadding, point.Y - borderPadding, 
-                textWidth + borderPadding * 2, textHeight + borderPadding * 2);
-            var pen = new XPen(GetBrush(borderColor), borderWidth);
-            gfx.DrawRectangle(pen, XBrushes.Transparent, borderRect);
-        }
-        
-        var currentY = point.Y;
-        foreach (char c in fullText)
-        {
-            gfx.DrawString(c.ToString(), font, brush, new XPoint(point.X, currentY), XStringFormats.TopLeft);
-            currentY += charSpacing;
-        }
-    }
-    
-    private void DrawCornerDiagonal(XGraphics gfx, string[] lines, XFont font, XBrush brush, PdfPage page, string corner)
-    {
-        var fullText = string.Join(" ", lines);
-        var textWidth = gfx.MeasureString(fullText, font).Width;
-        var textHeight = font.Height;
-        
-        double angle = 0;
-        XPoint startPoint;
-        var margin = 40.0; // Margin from edge
-        
-        switch (corner)
-        {
-            case "TopLeft":
-                // Vertical down from top-left (rotated 90 degrees clockwise)
-                angle = 90;
-                startPoint = new XPoint(margin + textHeight / 2, margin + textWidth / 2);
-                break;
-                
-            case "TopRight":
-                // Vertical down from top-right (rotated 90 degrees clockwise)
-                angle = 90;
-                startPoint = new XPoint(page.Width - margin - textHeight / 2, margin + textWidth / 2);
-                break;
-                
-            case "BottomLeft":
-                // Vertical up from bottom-left (rotated 90 degrees counter-clockwise)
-                angle = -90;
-                startPoint = new XPoint(margin + textHeight / 2, page.Height - margin - textWidth / 2);
-                break;
-                
-            case "BottomRight":
-                // Vertical up from bottom-right (rotated 90 degrees counter-clockwise)
-                angle = -90;
-                startPoint = new XPoint(page.Width - margin - textHeight / 2, page.Height - margin - textWidth / 2);
-                break;
-                
-            default:
-                startPoint = new XPoint(margin, margin);
-                break;
-        }
-        
-        gfx.TranslateTransform(startPoint.X, startPoint.Y);
-        gfx.RotateTransform(angle);
-        
-        // Draw text centered on the rotation point
-        var offset = -textWidth / 2;
-        gfx.DrawString(fullText, font, brush, new XPoint(offset, -textHeight / 2), XStringFormats.TopLeft);
     }
     
     private string PrepareTextWithSymbol()
@@ -1089,7 +1005,6 @@ private async Task DownloadCurrentFile()
             _ => XColors.Red
         };
         
-        // Apply opacity
         var alpha = (byte)(255 * stampOpacity / 100);
         var transparentColor = XColor.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
         return new XSolidBrush(transparentColor);
@@ -1221,58 +1136,56 @@ private async Task DownloadCurrentFile()
         };
     }
     
-private XPoint GetPosition(string position, double pageWidth, double pageHeight, XSize textSize, double rotation = 0)
-{
-    const double margin = 20;
-    
-    // Get the bounding box of rotated text
-    var rotatedBounds = GetRotatedTextBounds(textSize, rotation);
-    
-    if (position == "Custom")
+    private XPoint GetPosition(string position, double pageWidth, double pageHeight, XSize textSize, double rotation = 0)
     {
-        // Use percentage-based custom position
-        var x = margin + (pageWidth - 2 * margin - rotatedBounds.Width) * customX / 100.0;
-        var y = margin + (pageHeight - 2 * margin - rotatedBounds.Height) * customY / 100.0;
+        const double margin = 30;
         
-        // Add offset for rotation pivot
-        x += rotatedBounds.Width / 2;
-        y += rotatedBounds.Height / 2;
+        // Calculate the bounding box of the rotated text
+        var rotatedBounds = GetRotatedTextBounds(textSize, rotation);
         
-        return new XPoint(x, y);
+        // Ensure minimum margins to keep text on page
+        var safeMargin = Math.Max(margin, Math.Max(rotatedBounds.Width, rotatedBounds.Height) / 2 + 10);
+        
+        if (position == "Custom")
+        {
+            var x = safeMargin + (pageWidth - 2 * safeMargin) * customX / 100.0;
+            var y = safeMargin + (pageHeight - 2 * safeMargin) * customY / 100.0;
+            
+            return new XPoint(x, y);
+        }
+        
+        XPoint point;
+        
+        switch (position)
+        {
+            case "TopLeft":
+                point = new XPoint(safeMargin, safeMargin);
+                break;
+            case "TopCenter":
+                point = new XPoint(pageWidth / 2, safeMargin);
+                break;
+            case "TopRight":
+                point = new XPoint(pageWidth - safeMargin, safeMargin);
+                break;
+            case "Center":
+                point = new XPoint(pageWidth / 2, pageHeight / 2);
+                break;
+            case "BottomLeft":
+                point = new XPoint(safeMargin, pageHeight - safeMargin);
+                break;
+            case "BottomCenter":
+                point = new XPoint(pageWidth / 2, pageHeight - safeMargin);
+                break;
+            case "BottomRight":
+                point = new XPoint(pageWidth - safeMargin, pageHeight - safeMargin);
+                break;
+            default:
+                point = new XPoint(safeMargin, safeMargin);
+                break;
+        }
+        
+        return point;
     }
-    
-    XPoint point;
-    
-    switch (position)
-    {
-        case "TopLeft":
-            point = new XPoint(margin + rotatedBounds.Width / 2, margin + rotatedBounds.Height / 2);
-            break;
-        case "TopCenter":
-            point = new XPoint(pageWidth / 2, margin + rotatedBounds.Height / 2);
-            break;
-        case "TopRight":
-            point = new XPoint(pageWidth - margin - rotatedBounds.Width / 2, margin + rotatedBounds.Height / 2);
-            break;
-        case "Center":
-            point = new XPoint(pageWidth / 2, pageHeight / 2);
-            break;
-        case "BottomLeft":
-            point = new XPoint(margin + rotatedBounds.Width / 2, pageHeight - margin - rotatedBounds.Height / 2);
-            break;
-        case "BottomCenter":
-            point = new XPoint(pageWidth / 2, pageHeight - margin - rotatedBounds.Height / 2);
-            break;
-        case "BottomRight":
-            point = new XPoint(pageWidth - margin - rotatedBounds.Width / 2, pageHeight - margin - rotatedBounds.Height / 2);
-            break;
-        default:
-            point = new XPoint(margin + rotatedBounds.Width / 2, margin + rotatedBounds.Height / 2);
-            break;
-    }
-    
-    return point;
-}
     
     private string GetPdfDataUrl(byte[] pdfBytes)
     {
@@ -1310,72 +1223,38 @@ private XPoint GetPosition(string position, double pageWidth, double pageHeight,
         }
     }
     
-private async Task DownloadAllCompleted()
-{
-    try
+    private async Task DownloadAllCompleted()
     {
-        // Only download files that are stamped but haven't been downloaded yet
-        var filesToDownload = batchFiles.Where(f => f.StampedBytes != null && !f.Downloaded).ToList();
-        
-        if (!filesToDownload.Any())
+        try
         {
-            errorMessage = "All files have already been downloaded!";
-            return;
-        }
-        
-        for (int i = 0; i < filesToDownload.Count; i++)
-        {
-            var file = filesToDownload[i];
-            var fileName = $"stamped_{Path.GetFileNameWithoutExtension(file.Name)}.pdf";
-            var base64 = Convert.ToBase64String(file.StampedBytes!);
-            await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+            var filesToDownload = batchFiles.Where(f => f.StampedBytes != null && !f.Downloaded).ToList();
             
-            // Mark as downloaded
-            file.Downloaded = true;
-            
-            // Longer delay between downloads
-            if (i < filesToDownload.Count - 1)
+            if (!filesToDownload.Any())
             {
-                await Task.Delay(1000);
+                errorMessage = "All files have already been downloaded!";
+                return;
             }
+            
+            for (int i = 0; i < filesToDownload.Count; i++)
+            {
+                var file = filesToDownload[i];
+                var fileName = $"stamped_{Path.GetFileNameWithoutExtension(file.Name)}.pdf";
+                var base64 = Convert.ToBase64String(file.StampedBytes!);
+                await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+                
+                file.Downloaded = true;
+                
+                if (i < filesToDownload.Count - 1)
+                {
+                    await Task.Delay(1000);
+                }
+            }
+            
+            errorMessage = $"Downloaded {filesToDownload.Count} file(s) successfully!";
         }
-        
-        errorMessage = $"Downloaded {filesToDownload.Count} file(s) successfully!";
+        catch (Exception ex)
+        {
+            errorMessage = $"Download error: {ex.Message}";
+        }
     }
-    catch (Exception ex)
-    {
-        errorMessage = $"Download error: {ex.Message}";
-    }
-}
-private void ApplyStamp(PdfPage page, string position)
-{
-    using var gfx = XGraphics.FromPdfPage(page);
-    
-    var font = new XFont(fontFamily, fontSize, XFontStyle.Bold);
-    var brush = GetBrush(stampColor);
-    
-    // Prepare text with symbol
-    var fullText = PrepareTextWithSymbol();
-    
-    var lines = fullText.Replace("\\n", "\n").Split('\n');
-    var lineHeight = font.Height;
-    
-    // Apply text with rotation
-    ApplyTextWithOrientation(gfx, lines, font, brush, lineHeight, position, page);
-}
-private XRect GetRotatedTextBounds(XSize textSize, double angle)
-{
-    // Convert angle to radians
-    var rad = angle * Math.PI / 180.0;
-    
-    // Calculate the four corners of the text rectangle after rotation
-    var cos = Math.Abs(Math.Cos(rad));
-    var sin = Math.Abs(Math.Sin(rad));
-    
-    // New bounding box dimensions
-    var width = textSize.Width * cos + textSize.Height * sin;
-    var height = textSize.Width * sin + textSize.Height * cos;
-    
-    return new XRect(0, 0, width, height);
-}
 }
