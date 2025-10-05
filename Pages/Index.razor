@@ -20,7 +20,6 @@
             </button>
         </div>
     </div>
-    
     @if (showStampPresets)
     {
         <div class="card mb-4">
@@ -40,16 +39,34 @@
                 <div class="list-group">
                     @foreach (var preset in stampPresets)
                     {
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>
-                                <strong>@preset.Name</strong>
-                                <small class="text-muted d-block">@preset.Text - @preset.Position (@preset.Color, @preset.FontSize pt)</small>
-                            </span>
-                            <div>
-                                <button class="btn btn-sm btn-primary me-2" @onclick="() => LoadPreset(preset)">Load</button>
-                                <button class="btn btn-sm btn-danger" @onclick="() => RemovePreset(preset)">Delete</button>
-                            </div>
-                        </div>
+						<div class="list-group-item d-flex justify-content-between align-items-center">
+							<span>
+								<strong>@preset.Name</strong>
+									<small class="text-muted d-block">
+										@if (!string.IsNullOrEmpty(preset.Text) && preset.StampMode != "ImageOnly")
+										{
+											@preset.Text <text> - </text>
+										}
+										@preset.Position (@preset.Color, @preset.FontSize pt)
+										@if (!string.IsNullOrEmpty(preset.ImageBase64))
+										{
+											<span class="badge bg-info ms-2">📷 @preset.ImageName</span>
+										}
+										@if (preset.StampMode == "ImageOnly")
+										{
+											<span class="badge bg-success ms-2">Image Only</span>
+										}
+										else if (preset.StampMode == "Both")
+										{
+											<span class="badge bg-primary ms-2">Image + Text</span>
+										}
+									</small>
+							</span>
+							<div>
+								<button class="btn btn-sm btn-primary me-2" @onclick="() => LoadPreset(preset)">Load</button>
+								<button class="btn btn-sm btn-danger" @onclick="() => RemovePreset(preset)">Delete</button>
+							</div>
+						</div>
                     }
                 </div>
                 
@@ -174,382 +191,273 @@
                     <div class="card-body">
                         <h5 class="card-title">Stamp Settings</h5>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Stamp Text (use \n for new lines)</label>
-                            <select class="form-select mb-2" @bind="stampText">
-                                <option value="">-- Select a phrase --</option>
-                                @foreach (var phrase in stampPhrases)
+                        <!-- Stamp Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">What to Stamp</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="stampType" id="textOnly" 
+                                       checked="@(stampMode == "TextOnly")" @onchange='() => stampMode = "TextOnly"'>
+                                <label class="form-check-label" for="textOnly">
+                                    Text Only
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="stampType" id="imageOnly" 
+                                       checked="@(stampMode == "ImageOnly")" @onchange='() => stampMode = "ImageOnly"'>
+                                <label class="form-check-label" for="imageOnly">
+                                    Image Only
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="stampType" id="both" 
+                                       checked="@(stampMode == "Both")" @onchange='() => stampMode = "Both"'>
+                                <label class="form-check-label" for="both">
+                                    Both Image and Text
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- TEXT SETTINGS -->
+                        @if (stampMode == "TextOnly" || stampMode == "Both")
+                        {
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Text Settings</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Stamp Text (use \n for new lines)</label>
+                                        <select class="form-select mb-2" @bind="stampText">
+                                            <option value="">-- Select a phrase --</option>
+                                            @foreach (var phrase in stampPhrases)
+                                            {
+                                                <option value="@phrase">@phrase</option>
+                                            }
+                                        </select>
+                                        <textarea class="form-control" rows="3" @bind="stampText" placeholder="Or enter custom text (use \n for line breaks)"></textarea>
+                                        <small class="text-muted">Example: CONFIDENTIAL\nDO NOT COPY</small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Add Symbol</label>
+                                        <select class="form-select" @bind="selectedSymbol">
+                                            <option value="">-- No Symbol --</option>
+                                            <option value="[X]">[X] Checkmark</option>
+                                            <option value="[!]">[!] Alert/Warning</option>
+                                            <option value="[*]">[*] Star/Important</option>
+                                            <option value="[APPROVED]">[APPROVED]</option>
+                                            <option value="[CONFIDENTIAL]">[CONFIDENTIAL]</option>
+                                            <option value="[DRAFT]">[DRAFT]</option>
+                                            <option value="[URGENT]">[URGENT]</option>
+                                            <option value="[COPY]">[COPY]</option>
+                                        </select>
+                                    </div>
+                                    
+                                    @if (!string.IsNullOrEmpty(selectedSymbol))
+                                    {
+                                        <div class="mb-3">
+                                            <label class="form-label">Symbol Position</label>
+                                            <select class="form-select" @bind="symbolPosition">
+                                                <option value="Before">Before Text</option>
+                                                <option value="After">After Text</option>
+                                                <option value="Above">Above Text</option>
+                                                <option value="Below">Below Text</option>
+                                            </select>
+                                        </div>
+                                    }
+
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" @bind="includeDateTimeStamp" id="includeDateTimeStamp">
+                                            <label class="form-check-label" for="includeDateTimeStamp">
+                                                Include Date/Time Stamp
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    @if (includeDateTimeStamp)
+                                    {
+                                        <div class="border-start border-3 border-primary ps-3 mb-3">
+                                            <div class="mb-2">
+                                                <label class="form-label">Format</label>
+                                                <select class="form-select form-select-sm" @bind="dateTimeFormat">
+                                                    <option value="yyyy-MM-dd HH:mm:ss">2025-01-15 14:30:45</option>
+                                                    <option value="MM/dd/yyyy hh:mm tt">01/15/2025 02:30 PM</option>
+                                                    <option value="dd/MM/yyyy HH:mm">15/01/2025 14:30</option>
+                                                    <option value="yyyy-MM-dd">2025-01-15 (Date Only)</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label">Position</label>
+                                                <select class="form-select form-select-sm" @bind="dateTimePosition">
+                                                    <option value="Above">Above main text</option>
+                                                    <option value="Below">Below main text</option>
+                                                    <option value="Replace">Replace main text</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Font Family</label>
+                                            <select class="form-select" @bind="fontFamily">
+                                                <option value="Arial">Arial</option>
+                                                <option value="Times New Roman">Times New Roman</option>
+                                                <option value="Courier New">Courier New</option>
+                                                <option value="Verdana">Verdana</option>
+                                                <option value="Georgia">Georgia</option>
+                                                <option value="Impact">Impact</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Font Size</label>
+                                            <input type="number" class="form-control" @bind="fontSize" min="8" max="72" />
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Color</label>
+                                            <select class="form-select" @bind="stampColor">
+                                                <option value="Red">Red</option>
+                                                <option value="Blue">Blue</option>
+                                                <option value="Green">Green</option>
+                                                <option value="Black">Black</option>
+                                                <option value="Gray">Gray</option>
+                                                <option value="Orange">Orange</option>
+                                                <option value="Purple">Purple</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Opacity</label>
+                                            <input type="range" class="form-range" @bind="stampOpacity" @bind:event="oninput" min="10" max="100" step="5" />
+                                            <small class="text-muted">@stampOpacity%</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- IMAGE SETTINGS -->
+                        @if (stampMode == "ImageOnly" || stampMode == "Both")
+                        {
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Image Settings</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Upload Image</label>
+                                        <InputFile OnChange="HandleImageSelected" class="form-control" accept=".png,.jpg,.jpeg" />
+                                        @if (stampImageBytes != null)
+                                        {
+                                            <div class="mt-2">
+                                                <small class="text-success">Loaded: @stampImageName</small>
+                                                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="ClearImage">Remove</button>
+                                            </div>
+                                        }
+                                        <small class="text-muted d-block">PNG, JPG, or JPEG (max 5MB)</small>
+                                    </div>
+                                    
+                                    @if (stampImageBytes != null)
+                                    {
+                                        <div class="mb-3">
+                                            <label class="form-label">Image Size</label>
+                                            <input type="range" class="form-range" @bind="imageWidth" @bind:event="oninput" min="50" max="300" />
+                                            <small class="text-muted">Width: @imageWidth px</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- POSITION & STYLING -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Position & Style</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Position</label>
+                                    <div class="position-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 300px; margin-bottom: 10px;">
+                                        <button type="button" class="btn btn-sm @(stampPosition == "TopLeft" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopLeft"'>TL</button>
+                                        <button type="button" class="btn btn-sm @(stampPosition == "TopCenter" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopCenter"'>TC</button>
+                                        <button type="button" class="btn btn-sm @(stampPosition == "TopRight" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopRight"'>TR</button>
+                                        <button type="button" class="btn btn-sm @(stampPosition == "BottomLeft" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "BottomLeft"'>BL</button>
+                                        <button type="button" class="btn btn-sm @(stampPosition == "Center" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "Center"'>C</button>
+                                        <button type="button" class="btn btn-sm @(stampPosition == "BottomRight" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "BottomRight"'>BR</button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Rotation</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RotateCounterClockwise">↶ -45°</button>
+                                        <strong>@textRotation°</strong>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RotateClockwise">↷ +45°</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="ResetRotation">Reset</button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" @bind="showBorder" id="showBorder">
+                                        <label class="form-check-label" for="showBorder">
+                                            Add Border/Effects
+                                        </label>
+                                    </div>
+                                </div>
+
+                                @if (showBorder)
                                 {
-                                    <option value="@phrase">@phrase</option>
+                                    <div class="border-start border-3 border-secondary ps-3">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label">Style</label>
+                                                <select class="form-select form-select-sm" @bind="borderStyle">
+                                                    <option value="Single">Single</option>
+                                                    <option value="Double">Double</option>
+                                                    <option value="Rounded">Rounded</option>
+                                                    <option value="Shadow">Shadow</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label">Color</label>
+                                                <select class="form-select form-select-sm" @bind="borderColor">
+                                                    <option value="Red">Red</option>
+                                                    <option value="Blue">Blue</option>
+                                                    <option value="Black">Black</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
                                 }
-                            </select>
-                            <textarea class="form-control" rows="3" @bind="stampText" placeholder="Or enter custom text (use \n for line breaks)"></textarea>
-                            <small class="text-muted">Example: CONFIDENTIAL\nDO NOT COPY</small>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" @bind="includeDateTimeStamp" id="includeDateTimeStamp">
-                                <label class="form-check-label" for="includeDateTimeStamp">
-                                    <strong>Include Date/Time Stamp</strong>
-                                </label>
                             </div>
                         </div>
-                        
-                        @if (includeDateTimeStamp)
-                        {
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <h6>Date/Time Stamp Settings</h6>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Date/Time Format</label>
-                                        <select class="form-select" @bind="dateTimeFormat">
-                                            <option value="yyyy-MM-dd HH:mm:ss">2025-01-15 14:30:45</option>
-                                            <option value="MM/dd/yyyy hh:mm tt">01/15/2025 02:30 PM</option>
-                                            <option value="dd/MM/yyyy HH:mm">15/01/2025 14:30</option>
-                                            <option value="yyyy-MM-dd">2025-01-15 (Date Only)</option>
-                                            <option value="MMMM dd, yyyy">January 15, 2025</option>
-                                            <option value="dddd, MMMM dd, yyyy">Monday, January 15, 2025</option>
-                                            <option value="HH:mm:ss">14:30:45 (Time Only)</option>
-                                            <option value="hh:mm tt">02:30 PM (Time Only)</option>
-                                        </select>
-                                        <small class="text-muted">Preview: @DateTime.Now.ToString(dateTimeFormat)</small>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Date/Time Position</label>
-                                        <select class="form-select" @bind="dateTimePosition">
-                                            <option value="Above">Above main text</option>
-                                            <option value="Below">Below main text</option>
-                                            <option value="Before">Before main text (same line)</option>
-                                            <option value="After">After main text (same line)</option>
-                                            <option value="Replace">Replace main text</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Date/Time Font Size</label>
-                                        <input type="number" class="form-control" @bind="dateTimeFontSize" min="6" max="72" />
-                                        <small class="text-muted">Independent from main text size</small>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Date/Time Font Family</label>
-                                        <select class="form-select" @bind="dateTimeFontFamily">
-                                            <option value="Arial">Arial</option>
-                                            <option value="Times New Roman">Times New Roman</option>
-                                            <option value="Courier New">Courier New</option>
-                                            <option value="Verdana">Verdana</option>
-                                            <option value="Georgia">Georgia</option>
-                                            <option value="Consolas">Consolas</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Add Symbol</label>
-                            <select class="form-select" @bind="selectedSymbol">
-                                <option value="">-- No Symbol --</option>
-                                <option value="[X]">[X] Checkmark</option>
-                                <option value="[!]">[!] Alert/Warning</option>
-                                <option value="[*]">[*] Star/Important</option>
-                                <option value="[APPROVED]">[APPROVED]</option>
-                                <option value="[CONFIDENTIAL]">[CONFIDENTIAL]</option>
-                                <option value="[DRAFT]">[DRAFT]</option>
-                                <option value="[URGENT]">[URGENT]</option>
-                                <option value="[COPY]">[COPY]</option>
-                                <option value=">>>">>> Forward Arrows</option>
-                                <option value="<<<">&lt;&lt;&lt; Back Arrows</option>
-                                <option value="***">*** Stars</option>
-                                <option value="==">== Double Line</option>
-                                <option value="--">-- Dash Line</option>
-                                <option value="###">### Hash Marks</option>
-                            </select>
-                            <small class="text-muted">Simple text-based symbols</small>
-                        </div>
-                        
-                        @if (!string.IsNullOrEmpty(selectedSymbol))
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">Symbol Position</label>
-                                <select class="form-select" @bind="symbolPosition">
-                                    <option value="Before">Before Text</option>
-                                    <option value="After">After Text</option>
-                                    <option value="Above">Above Text</option>
-                                    <option value="Below">Below Text</option>
-                                </select>
-                            </div>
-                        }
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Font Family</label>
-                            <select class="form-select" @bind="fontFamily">
-                                <option value="Arial">Arial</option>
-                                <option value="Times New Roman">Times New Roman</option>
-                                <option value="Courier New">Courier New</option>
-                                <option value="Verdana">Verdana</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Comic Sans MS">Comic Sans MS</option>
-                                <option value="Trebuchet MS">Trebuchet MS</option>
-                                <option value="Impact">Impact</option>
-                                <option value="Tahoma">Tahoma</option>
-                                <option value="Palatino Linotype">Palatino Linotype</option>
-                                <option value="Lucida Console">Lucida Console</option>
-                                <option value="Garamond">Garamond</option>
-                                <option value="Bookman Old Style">Bookman Old Style</option>
-                                <option value="Arial Black">Arial Black</option>
-                                <option value="Calibri">Calibri (Windows)</option>
-                                <option value="Cambria">Cambria (Windows)</option>
-                                <option value="Consolas">Consolas (Windows)</option>
-                                <option value="Segoe UI">Segoe UI (Windows)</option>
-                            </select>
-                            <small class="text-muted">Note: Some fonts may only work on specific operating systems</small>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Font Size</label>
-                            <input type="number" class="form-control" @bind="fontSize" @bind:event="oninput" min="8" max="72" />
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Position</label>
-                            <div class="position-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 300px; margin-bottom: 10px;">
-                                <button type="button" class="btn btn-sm @(stampPosition == "TopLeft" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopLeft"'>
-                                    TL
-                                </button>
-                                <button type="button" class="btn btn-sm @(stampPosition == "TopCenter" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopCenter"'>
-                                    TC
-                                </button>
-                                <button type="button" class="btn btn-sm @(stampPosition == "TopRight" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "TopRight"'>
-                                    TR
-                                </button>
-                                <button type="button" class="btn btn-sm @(stampPosition == "BottomLeft" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "BottomLeft"'>
-                                    BL
-                                </button>
-                                <button type="button" class="btn btn-sm @(stampPosition == "Center" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "Center"'>
-                                    C
-                                </button>
-                                <button type="button" class="btn btn-sm @(stampPosition == "BottomRight" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => stampPosition = "BottomRight"'>
-                                    BR
-                                </button>
-                            </div>
-                            <select class="form-select" @bind="stampPosition">
-                                <option value="TopLeft">Top Left</option>
-                                <option value="TopCenter">Top Center</option>
-                                <option value="TopRight">Top Right</option>
-                                <option value="Center">Center</option>
-                                <option value="BottomLeft">Bottom Left</option>
-                                <option value="BottomCenter">Bottom Center</option>
-                                <option value="BottomRight">Bottom Right</option>
-                                <option value="Custom">Custom Position...</option>
-                            </select>
-                        </div>
-                        
-                        @if (stampPosition == "Custom")
-                        {
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <h6>Custom Position</h6>
-                                    <div class="mb-2">
-                                        <label class="form-label">X Position (0-100%)</label>
-                                        <input type="range" class="form-range" @bind="customX" min="0" max="100" />
-                                        <small>@customX%</small>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label class="form-label">Y Position (0-100%)</label>
-                                        <input type="range" class="form-range" @bind="customY" min="0" max="100" />
-                                        <small>@customY%</small>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label class="form-label">Rotation (-180° to 180°)</label>
-                                        <input type="range" class="form-range" @bind="customRotation" min="-180" max="180" />
-                                        <small>@customRotation degrees</small>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        
-						<div class="mb-3">
-							<label class="form-label">Text Rotation</label>
-							<div class="d-flex align-items-center gap-3">
-								<button type="button" class="btn btn-outline-secondary" @onclick="RotateCounterClockwise">
-									↶ -45°
-								</button>
-								<div class="text-center">
-									<strong style="font-size: 1.5rem;">@textRotation°</strong>
-									<div><small class="text-muted">Current rotation</small></div>
-								</div>
-								<button type="button" class="btn btn-outline-secondary" @onclick="RotateClockwise">
-									↷ +45°
-								</button>
-								<button type="button" class="btn btn-sm btn-outline-danger" @onclick="ResetRotation">
-									Reset
-								</button>
-							</div>
-							<small class="text-muted">Click buttons to rotate in 45° increments</small>
-						</div>                        
-                        <div class="mb-3">
-                            <label class="form-label">Color</label>
-                            <select class="form-select" @bind="stampColor" @bind:event="oninput">
-                                <option value="Red">Red</option>
-                                <option value="Blue">Blue</option>
-                                <option value="Green">Green</option>
-                                <option value="Black">Black</option>
-                                <option value="Gray">Gray</option>
-                                <option value="Orange">Orange</option>
-                                <option value="Purple">Purple</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Opacity / Transparency</label>
-                            <input type="range" class="form-range" @bind="stampOpacity" @bind:event="oninput" min="10" max="100" step="5" />
-                            <small class="text-muted">@stampOpacity% - @(stampOpacity < 50 ? "Watermark" : stampOpacity < 80 ? "Semi-transparent" : "Solid")</small>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" @bind="showBorder" id="showBorder">
-                                <label class="form-check-label" for="showBorder">
-                                    Show Border/Effects
-                                </label>
-                            </div>
-                        </div>
-                        
-                        @if (showBorder)
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">Border Style</label>
-                                <select class="form-select" @bind="borderStyle">
-                                    <option value="Single">Single Line</option>
-                                    <option value="Double">Double Line</option>
-                                    <option value="Rounded">Rounded Corners</option>
-                                    <option value="Outline">Outline Text Only</option>
-                                    <option value="Shadow">Drop Shadow</option>
-                                    <option value="Glow">Glow Effect</option>
-                                    <option value="Highlight">Highlight Background</option>
-                                    <option value="Dashed">Dashed Border</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Border Color</label>
-                                <select class="form-select" @bind="borderColor">
-                                    <option value="Red">Red</option>
-                                    <option value="Blue">Blue</option>
-                                    <option value="Green">Green</option>
-                                    <option value="Black">Black</option>
-                                    <option value="Gray">Gray</option>
-                                    <option value="Orange">Orange</option>
-                                    <option value="Purple">Purple</option>
-                                    <option value="Yellow">Yellow</option>
-                                    <option value="White">White</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Border Width</label>
-                                <input type="number" class="form-control" @bind="borderWidth" min="1" max="10" />
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Border Padding</label>
-                                <input type="number" class="form-control" @bind="borderPadding" min="5" max="50" />
-                            </div>
-                            
-                            @if (borderStyle == "Rounded")
-                            {
+
+                        <!-- PAGE OPTIONS -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Page Options</h6>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Corner Radius</label>
-                                    <input type="number" class="form-control" @bind="cornerRadius" min="5" max="50" />
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" @bind="stampAllPages" id="stampAllPages">
+                                        <label class="form-check-label" for="stampAllPages">
+                                            Stamp all pages
+                                        </label>
+                                    </div>
                                 </div>
-                            }
-                            
-                            @if (borderStyle == "Shadow" || borderStyle == "Glow")
-                            {
-                                <div class="mb-3">
-                                    <label class="form-label">Effect Intensity</label>
-                                    <input type="number" class="form-control" @bind="effectIntensity" min="1" max="10" />
-                                </div>
-                            }
-                            
-                            @if (borderStyle == "Highlight")
-                            {
-                                <div class="mb-3">
-                                    <label class="form-label">Background Opacity (0-100)</label>
-                                    <input type="number" class="form-control" @bind="backgroundOpacity" min="0" max="100" />
-                                </div>
-                            }
-                        }
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" @bind="stampAllPages" id="stampAllPages">
-                                <label class="form-check-label" for="stampAllPages">
-                                    Stamp all pages
-                                </label>
+                                
+                                @if (!stampAllPages)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label">Page Number (1-@pageCount)</label>
+                                        <input type="number" class="form-control" @bind="pageNumber" min="1" max="@pageCount" />
+                                    </div>
+                                }
                             </div>
                         </div>
                         
-                        @if (!stampAllPages)
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">Page Number (1-@pageCount)</label>
-                                <input type="number" class="form-control" @bind="pageNumber" min="1" max="@pageCount" />
-                            </div>
-                        }
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Number of Stamps per Page</label>
-                            <select class="form-select" @bind="stampsPerPage">
-                                <option value="1">1 Stamp</option>
-                                <option value="2">2 Stamps (Mirrored)</option>
-                                <option value="3">3 Stamps</option>
-                            </select>
-                            @if (stampsPerPage == 2)
-                            {
-                                <small class="text-muted">Second stamp will be mirrored symmetrically across page center</small>
-                            }
-                        </div>
-                        
-                        @if (stampsPerPage > 2)
-                        {
-                            <div class="alert alert-info">
-                                <small>
-                                    <strong>Multiple Stamps:</strong><br/>
-                                    Stamp 1: Current position (@stampPosition)<br/>
-                                    <span>
-                                        Stamp 2: 
-                                        <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp2Position">
-                                            <option value="TopLeft">Top Left</option>
-                                            <option value="TopCenter">Top Center</option>
-                                            <option value="TopRight">Top Right</option>
-                                            <option value="Center">Center</option>
-                                            <option value="BottomLeft">Bottom Left</option>
-                                            <option value="BottomCenter">Bottom Center</option>
-                                            <option value="BottomRight">Bottom Right</option>
-                                        </select>
-                                        <br/>
-                                    </span>
-                                    <span>
-                                        Stamp 3: 
-                                        <select class="form-select form-select-sm d-inline-block w-auto" @bind="stamp3Position">
-                                            <option value="TopLeft">Top Left</option>
-                                            <option value="TopCenter">Top Center</option>
-                                            <option value="TopRight">Top Right</option>
-                                            <option value="Center">Center</option>
-                                            <option value="BottomLeft">Bottom Left</option>
-                                            <option value="BottomCenter">Bottom Center</option>
-                                            <option value="BottomRight">Bottom Right</option>
-                                        </select>
-                                    </span>
-                                </small>
-                            </div>
-                        }
-                        
+                        <!-- ACTION BUTTONS -->
                         <div class="btn-toolbar gap-2 mt-3" role="toolbar">
                             @if (batchMode)
                             {
@@ -579,11 +487,8 @@
                                 
                                 @if (batchFiles.All(f => f.StampedBytes != null))
                                 {
-                                    <button class="btn btn-secondary" @onclick="DownloadAllCompleted">
-                                        Download All (@batchFiles.Count)
-                                    </button>
                                     <button class="btn btn-success" @onclick="DownloadAsZip">
-                                        📦 Download as ZIP
+                                        Download as ZIP
                                     </button>
                                 }
                             }
@@ -603,18 +508,11 @@
                                         Download Stamped PDF
                                     </button>
                                     <button class="btn btn-info" @onclick="ToggleStampPresets">
-                                        💾 Save These Settings
+                                        Save Settings
                                     </button>
                                 }
                             }
                         </div>
-                        
-                        @if (batchFiles.Any(f => f.StampedBytes != null && !f.Downloaded))
-                        {
-                            <div class="alert alert-warning mt-3 mb-0">
-                                <small><strong>Note:</strong> When downloading multiple files, your browser may ask for permission to allow multiple downloads. Please click "Allow" when prompted.</small>
-                            </div>
-                        }
                         
                     </div>
                 </div>
@@ -687,64 +585,46 @@
             
             @if (pdfLoaded || batchFiles.Any())
             {
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title text-center">Stamp Preview</h6>
-                                <div style="min-height: 150px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; border-radius: 5px; padding: 15px; background-color: #f8f9fa; position: relative; overflow: hidden;">
-                                    <div style="transform: rotate(@(textRotation)deg); display: inline-block; position: relative;">
-                                        <div style="font-family: @GetPreviewFontFamily(); text-align: center;">
-                                            @foreach (var line in GetPreviewLines())
-                                            {
-                                                var lineStyle = GetPreviewLineStyle(line);
-                                                <div style="@lineStyle">@line</div>
-                                            }
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h6 class="card-title text-center">Stamp Preview</h6>
+                        <div style="min-height: 150px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; border-radius: 5px; padding: 15px; background-color: #f8f9fa; position: relative; overflow: hidden;">
+                            <div style="transform: rotate(@(textRotation)deg); display: inline-block; position: relative;">
+                                
+                                @if (stampImageBytes != null && (stampMode == "ImageOnly" || stampMode == "Both"))
+                                {
+                                    var imageDataUrl = GetImageDataUrl();
+                                    if (!string.IsNullOrEmpty(imageDataUrl))
+                                    {
+                                        <div style="text-align: center; @(stampMode == "Both" ? "margin-bottom: 10px;" : "")">
+                                            <img src="@imageDataUrl" style="max-width: @(imageWidth)px; height: auto;" alt="Stamp image" />
                                         </div>
-                                        @if (showBorder && borderStyle != "Outline" && borderStyle != "Shadow" && borderStyle != "Glow" && borderStyle != "Highlight")
+                                    }
+                                }
+                                
+                                @if (!string.IsNullOrEmpty(stampText) && (stampMode == "TextOnly" || stampMode == "Both"))
+                                {
+                                    <div style="font-family: @GetPreviewFontFamily(); text-align: center;">
+                                        @foreach (var line in GetPreviewLines())
                                         {
-                                            <div style="position: absolute; top: -@(borderPadding)px; left: -@(borderPadding)px; right: -@(borderPadding)px; bottom: -@(borderPadding)px; border: @(borderWidth)px @(borderStyle == "Dashed" ? "dashed" : "solid") @GetColorCode(borderColor); border-radius: @(borderStyle == "Rounded" ? cornerRadius + "px" : "0"); pointer-events: none;"></div>
+                                            var lineStyle = GetPreviewLineStyle(line);
+                                            <div style="@lineStyle">@line</div>
                                         }
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title text-center">Position Preview</h6>
-                                <div style="width: 100%; aspect-ratio: 8.5/11; border: 2px solid #dee2e6; border-radius: 5px; background-color: white; position: relative;">
-                                    @{
-                                        var positions = new List<string> { stampPosition };
-                                        if (stampsPerPage == 2)
-                                        {
-                                            positions.Add(GetMirroredPosition(stampPosition));
-                                        }
-                                        else if (stampsPerPage == 3)
-                                        {
-                                            positions.Add(stamp2Position);
-                                            positions.Add(stamp3Position);
-                                        }
-                                        
-                                        foreach (var pos in positions)
-                                        {
-                                            var positionStyle = GetPositionBoxStyle(pos);
-                                            <div style="@positionStyle"></div>
-                                        }
-                                    }
-                                </div>
-                                <small class="text-muted d-block text-center mt-2">Colored boxes show stamp locations</small>
+                                }
+                                
+                                @if (showBorder && borderStyle != "Outline" && borderStyle != "Shadow" && borderStyle != "Glow" && borderStyle != "Highlight")
+                                {
+                                    <div style="position: absolute; top: -@(borderPadding)px; left: -@(borderPadding)px; right: -@(borderPadding)px; bottom: -@(borderPadding)px; border: @(borderWidth)px @(borderStyle == "Dashed" ? "dashed" : "solid") @GetColorCode(borderColor); border-radius: @(borderStyle == "Rounded" ? cornerRadius + "px" : "0"); pointer-events: none;"></div>
+                                }
                             </div>
                         </div>
                     </div>
                 </div>
             }
         </div>
-    </div>
+	</div>
 </div>
-
 @code {
     private byte[]? originalPdfBytes;
     private byte[]? stampedPdfBytes;
@@ -758,9 +638,13 @@
     private string newPresetName = string.Empty;
     private bool batchMode = false;
     private List<BatchPdfFile> batchFiles = new List<BatchPdfFile>();
-    private List<BatchPdfFile> batchStampedFiles = new List<BatchPdfFile>();
     private int currentBatchIndex = 0;
     private BatchPdfFile? currentBatchFile => currentBatchIndex < batchFiles.Count ? batchFiles[currentBatchIndex] : null;
+    private byte[]? stampImageBytes;
+    private string stampImageName = string.Empty;
+    private int imageWidth = 100;
+    private string stampMode = "TextOnly";
+	private int cornerRadius = 10;
     
     private class BatchPdfFile
     {
@@ -785,23 +669,12 @@
     private string borderColor = "Red";
     private int borderWidth = 2;
     private int borderPadding = 10;
-    private int cornerRadius = 15;
-    private int effectIntensity = 5;
-    private int backgroundOpacity = 30;
     private string selectedSymbol = "";
     private string symbolPosition = "Before";
-    private int stampsPerPage = 1;
-    private string stamp2Position = "BottomLeft";
-    private string stamp3Position = "BottomRight";
-    private int customX = 50;
-    private int customY = 50;
-    private int customRotation = 0;
     
     private bool includeDateTimeStamp = false;
     private string dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
     private string dateTimePosition = "Below";
-    private int dateTimeFontSize = 14;
-    private string dateTimeFontFamily = "Arial";
     
     private List<StampPreset> stampPresets = new List<StampPreset>();
     
@@ -824,8 +697,10 @@
         public bool IncludeDateTime { get; set; }
         public string DateTimeFormat { get; set; } = "";
         public string DateTimePosition { get; set; } = "";
-        public int DateTimeFontSize { get; set; }
-        public string DateTimeFontFamily { get; set; } = "";
+        public string? ImageBase64 { get; set; }
+        public string? ImageName { get; set; }
+        public string StampMode { get; set; } = "TextOnly";
+        public int ImageWidth { get; set; } = 100;
     }
     
     private List<string> stampPhrases = new List<string>
@@ -850,7 +725,7 @@
         showStampPresets = !showStampPresets;
     }
     
-    private void SaveCurrentSettings()
+    private async Task SaveCurrentSettings()
     {
         if (string.IsNullOrWhiteSpace(newPresetName))
         {
@@ -877,14 +752,16 @@
             IncludeDateTime = includeDateTimeStamp,
             DateTimeFormat = dateTimeFormat,
             DateTimePosition = dateTimePosition,
-            DateTimeFontSize = dateTimeFontSize,
-            DateTimeFontFamily = dateTimeFontFamily
+            ImageBase64 = stampImageBytes != null ? Convert.ToBase64String(stampImageBytes) : null,
+            ImageName = stampImageName,
+            StampMode = stampMode,
+            ImageWidth = imageWidth
         };
         
-        stampPresets.Add(preset);
-        SavePresetsToLocalStorage();
-        newPresetName = string.Empty;
-        errorMessage = string.Empty;
+		stampPresets.Add(preset);
+		await SavePresetsToLocalStorage();
+		newPresetName = string.Empty;
+		errorMessage = "Preset saved successfully!"; // ADD THIS TO CONFIRM
     }
     
     private void LoadPreset(StampPreset preset)
@@ -905,49 +782,72 @@
         includeDateTimeStamp = preset.IncludeDateTime;
         dateTimeFormat = preset.DateTimeFormat;
         dateTimePosition = preset.DateTimePosition;
-        dateTimeFontSize = preset.DateTimeFontSize;
-        dateTimeFontFamily = preset.DateTimeFontFamily;
+        
+        if (!string.IsNullOrEmpty(preset.ImageBase64))
+        {
+            stampImageBytes = Convert.FromBase64String(preset.ImageBase64);
+            stampImageName = preset.ImageName ?? "";
+        }
+        else
+        {
+            stampImageBytes = null;
+            stampImageName = string.Empty;
+        }
+        
+        stampMode = preset.StampMode;
+        imageWidth = preset.ImageWidth;
         
         showStampPresets = false;
         errorMessage = string.Empty;
     }
     
-    private void RemovePreset(StampPreset preset)
+    private async Task RemovePreset(StampPreset preset)
     {
         stampPresets.Remove(preset);
-        SavePresetsToLocalStorage();
+        await SavePresetsToLocalStorage();
     }
     
-    private async void SavePresetsToLocalStorage()
+    private async Task SavePresetsToLocalStorage()
     {
         try
         {
-            var presetsJson = System.Text.Json.JsonSerializer.Serialize(stampPresets);
+            var options = new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = false
+            };
+            var presetsJson = System.Text.Json.JsonSerializer.Serialize(stampPresets, options);
+            
+            if (presetsJson.Length > 5 * 1024 * 1024)
+            {
+                errorMessage = "Warning: Presets data is very large. Consider using smaller images or fewer presets.";
+            }
+            
             await JS.InvokeVoidAsync("localStorage.setItem", "stampPresets", presetsJson);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving presets: {ex.Message}");
+            errorMessage = $"Error saving presets: {ex.Message}. Try using smaller images.";
         }
     }
     
-    private void AddPhrase()
+    private async Task AddPhrase()
     {
         if (!string.IsNullOrWhiteSpace(newPhrase) && !stampPhrases.Contains(newPhrase))
         {
             stampPhrases.Add(newPhrase);
-            SavePhrasesToLocalStorage();
+            await SavePhrasesToLocalStorage();
             newPhrase = string.Empty;
         }
     }
     
-    private void RemovePhrase(string phrase)
+    private async Task RemovePhrase(string phrase)
     {
         stampPhrases.Remove(phrase);
-        SavePhrasesToLocalStorage();
+        await SavePhrasesToLocalStorage();
     }
     
-    private async void SavePhrasesToLocalStorage()
+    private async Task SavePhrasesToLocalStorage()
     {
         try
         {
@@ -957,6 +857,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving phrases: {ex.Message}");
+            errorMessage = $"Error saving phrases: {ex.Message}";
         }
     }
     
@@ -1031,7 +932,6 @@
     {
         errorMessage = string.Empty;
         batchFiles.Clear();
-        batchStampedFiles.Clear();
         currentBatchIndex = 0;
         
         try
@@ -1105,24 +1005,7 @@
                     if (pageIndex < 0 || pageIndex >= document.PageCount) continue;
                     
                     var page = document.Pages[pageIndex];
-                    
-                    if (stampsPerPage == 2)
-                    {
-                        ApplyStamp(page, stampPosition);
-                        var mirroredPosition = GetMirroredPosition(stampPosition);
-                        ApplyStamp(page, mirroredPosition);
-                    }
-                    else
-                    {
-                        var positions = new List<string> { stampPosition };
-                        if (stampsPerPage >= 2) positions.Add(stamp2Position);
-                        if (stampsPerPage >= 3) positions.Add(stamp3Position);
-                        
-                        foreach (var position in positions)
-                        {
-                            ApplyStamp(page, position);
-                        }
-                    }
+                    ApplyStamp(page, stampPosition);
                 }
                 
                 using var outputStream = new MemoryStream();
@@ -1148,37 +1031,37 @@
             isProcessing = false;
         }
     }
-	
-	private async Task StampAllFiles()
-{
-    if (!batchFiles.Any() || isProcessing) return;
     
-    isProcessing = true;
-    errorMessage = string.Empty;
-    
-    try
+    private async Task StampAllFiles()
     {
-        for (int i = 0; i < batchFiles.Count; i++)
-        {
-            currentBatchIndex = i;
-            StateHasChanged();
-            
-            await StampPdf();
-            
-            await Task.Delay(100);
-        }
+        if (!batchFiles.Any() || isProcessing) return;
         
-        errorMessage = $"Successfully stamped all {batchFiles.Count} files!";
+        isProcessing = true;
+        errorMessage = string.Empty;
+        
+        try
+        {
+            for (int i = 0; i < batchFiles.Count; i++)
+            {
+                currentBatchIndex = i;
+                StateHasChanged();
+                
+                await StampPdf();
+                
+                await Task.Delay(100);
+            }
+            
+            errorMessage = $"Successfully stamped all {batchFiles.Count} files!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error stamping files: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
     }
-    catch (Exception ex)
-    {
-        errorMessage = $"Error stamping files: {ex.Message}";
-    }
-    finally
-    {
-        isProcessing = false;
-    }
-}
     
     private async Task DownloadCurrentFile()
     {
@@ -1211,19 +1094,110 @@
         }
     }
     
-    private void ApplyStamp(PdfPage page, string position)
+	private void ApplyStamp(PdfPage page, string position)
+	{
+		using var gfx = XGraphics.FromPdfPage(page);
+		
+		// Calculate position first
+		double centerX, centerY;
+		const double margin = 30;
+		
+		// Get center point based on position
+		switch (position)
+		{
+			case "TopLeft":
+				centerX = margin + 50;
+				centerY = margin + 50;
+				break;
+			case "TopRight":
+				centerX = page.Width - margin - 50;
+				centerY = margin + 50;
+				break;
+			case "TopCenter":
+				centerX = page.Width / 2;
+				centerY = margin + 50;
+				break;
+			case "BottomLeft":
+				centerX = margin + 50;
+				centerY = page.Height - margin - 50;
+				break;
+			case "BottomRight":
+				centerX = page.Width - margin - 50;
+				centerY = page.Height - margin - 50;
+				break;
+			case "BottomCenter":
+				centerX = page.Width / 2;
+				centerY = page.Height - margin - 50;
+				break;
+			case "Center":
+			default:
+				centerX = page.Width / 2;
+				centerY = page.Height / 2;
+				break;
+		}
+		
+		var state = gfx.Save();
+		
+		// Apply rotation at the center point
+		gfx.TranslateTransform(centerX, centerY);
+		gfx.RotateTransform(textRotation);
+		
+		double currentY = 0;
+		
+		// Draw image if mode allows
+		if (stampImageBytes != null && (stampMode == "ImageOnly" || stampMode == "Both"))
+		{
+			var image = XImage.FromStream(() => new MemoryStream(stampImageBytes));
+			var aspectRatio = (double)image.PixelHeight / image.PixelWidth;
+			var imgHeight = imageWidth * aspectRatio;
+			
+			// Draw image centered at origin (which is now the rotation point)
+			gfx.DrawImage(image, -imageWidth / 2, currentY - imgHeight / 2, imageWidth, imgHeight);
+			
+			if (stampMode == "Both")
+			{
+				currentY += imgHeight / 2 + 10; // Add spacing before text
+			}
+		}
+		
+		// Draw text if mode allows
+		if (!string.IsNullOrEmpty(stampText) && (stampMode == "TextOnly" || stampMode == "Both"))
+		{
+			var font = new XFont(fontFamily, fontSize, XFontStyle.Bold);
+			var brush = GetBrush(stampColor);
+			var fullText = PrepareTextWithSymbol();
+			var lines = fullText.Replace("\\n", "\n").Split('\n');
+			
+			// Calculate total text height
+			var totalHeight = lines.Length * font.Height;
+			var startY = stampMode == "Both" ? currentY : -totalHeight / 2;
+			
+			// Draw each line centered
+			foreach (var line in lines)
+			{
+				var lineSize = gfx.MeasureString(line, font);
+				gfx.DrawString(line, font, brush, -lineSize.Width / 2, startY, XStringFormats.TopLeft);
+				startY += font.Height;
+			}
+		}
+		
+		gfx.Restore(state);
+	}    
+    private XPoint GetImagePosition(string position, double pageWidth, double pageHeight, double imgWidth, double imgHeight)
     {
-        using var gfx = XGraphics.FromPdfPage(page);
+        const double margin = 30;
         
-        var font = new XFont(fontFamily, fontSize, XFontStyle.Bold);
-        var brush = GetBrush(stampColor);
-        
-        var fullText = PrepareTextWithSymbol();
-        
-        var lines = fullText.Replace("\\n", "\n").Split('\n');
-        var lineHeight = font.Height;
-        
-        ApplyTextWithOrientation(gfx, lines, font, brush, lineHeight, position, page);
+        return position switch
+        {
+            "TopLeft" => new XPoint(margin, margin),
+            "TopRight" => new XPoint(pageWidth - imgWidth - margin, margin),
+            "TopCenter" => new XPoint((pageWidth - imgWidth) / 2, margin),
+            "BottomLeft" => new XPoint(margin, pageHeight - imgHeight - margin),
+            "BottomRight" => new XPoint(pageWidth - imgWidth - margin, pageHeight - imgHeight - margin),
+            "BottomCenter" => new XPoint((pageWidth - imgWidth) / 2, pageHeight - imgHeight - margin),
+            "Center" => new XPoint((pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2),
+            _ => new XPoint(margin, margin)
+        };
     }
     
     private void ApplyTextWithOrientation(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page)
@@ -1255,46 +1229,22 @@
     
     private void DrawRotatedText(XGraphics gfx, string[] lines, XFont font, XBrush brush, double lineHeight, string position, PdfPage page, double angle)
     {
-        var hasDateTime = includeDateTimeStamp && dateTimePosition != "Replace";
-        
         var maxWidth = 0.0;
         var totalHeight = 0.0;
         
-        if (hasDateTime && (dateTimePosition == "Above" || dateTimePosition == "Below"))
+        foreach (var line in lines)
         {
-            var dateTimeFont = new XFont(dateTimeFontFamily, dateTimeFontSize, XFontStyle.Bold);
-            var mainFont = new XFont(fontFamily, fontSize, XFontStyle.Bold);
-            
-            foreach (var line in lines)
-            {
-                var isDateTimeLine = (dateTimePosition == "Above" && line == lines[0]) ||
-                                    (dateTimePosition == "Below" && line == lines[^1]);
-                
-                var currentFont = isDateTimeLine ? dateTimeFont : mainFont;
-                var lineSize = gfx.MeasureString(line, currentFont);
-                
-                if (lineSize.Width > maxWidth)
-                    maxWidth = lineSize.Width;
-                
-                totalHeight += currentFont.Height;
-            }
+            var lineSize = gfx.MeasureString(line, font);
+            if (lineSize.Width > maxWidth)
+                maxWidth = lineSize.Width;
         }
-        else
-        {
-            foreach (var line in lines)
-            {
-                var lineSize = gfx.MeasureString(line, font);
-                if (lineSize.Width > maxWidth)
-                    maxWidth = lineSize.Width;
-            }
-            totalHeight = lineHeight * lines.Length;
-        }
+        totalHeight = lineHeight * lines.Length;
         
         var textSize = new XSize(maxWidth, totalHeight);
         var point = GetPosition(position, page.Width, page.Height, textSize, angle);
         
         gfx.TranslateTransform(point.X, point.Y);
-        gfx.RotateTransform(angle );
+        gfx.RotateTransform(angle);
         
         var startX = -maxWidth / 2;
         var startY = -totalHeight / 2;
@@ -1307,32 +1257,12 @@
         
         var currentY = startY;
         
-        if (hasDateTime && (dateTimePosition == "Above" || dateTimePosition == "Below"))
+        foreach (var line in lines)
         {
-            var dateTimeFont = new XFont(dateTimeFontFamily, dateTimeFontSize, XFontStyle.Bold);
-            var mainFont = new XFont(fontFamily, fontSize, XFontStyle.Bold);
-            
-            foreach (var line in lines)
-            {
-                var isDateTimeLine = (dateTimePosition == "Above" && line == lines[0]) ||
-                                    (dateTimePosition == "Below" && line == lines[^1]);
-                
-                var currentFont = isDateTimeLine ? dateTimeFont : mainFont;
-                var lineWidth = gfx.MeasureString(line, currentFont).Width;
-                var lineX = startX + (maxWidth - lineWidth) / 2;
-                gfx.DrawString(line, currentFont, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
-                currentY += currentFont.Height;
-            }
-        }
-        else
-        {
-            foreach (var line in lines)
-            {
-                var lineWidth = gfx.MeasureString(line, font).Width;
-                var lineX = startX + (maxWidth - lineWidth) / 2;
-                gfx.DrawString(line, font, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
-                currentY += lineHeight;
-            }
+            var lineWidth = gfx.MeasureString(line, font).Width;
+            var lineX = startX + (maxWidth - lineWidth) / 2;
+            gfx.DrawString(line, font, brush, new XPoint(lineX, currentY), XStringFormats.TopLeft);
+            currentY += lineHeight;
         }
     }
     
@@ -1360,8 +1290,6 @@
             {
                 "Above" => $"{dateTimeText}\n{mainText}",
                 "Below" => $"{mainText}\n{dateTimeText}",
-                "Before" => $"{dateTimeText} {mainText}",
-                "After" => $"{mainText} {dateTimeText}",
                 "Replace" => dateTimeText,
                 _ => mainText
             };
@@ -1381,7 +1309,6 @@
             "BottomLeft" => "TopRight",
             "BottomCenter" => "TopCenter",
             "BottomRight" => "TopLeft",
-            "Custom" => "Custom",
             _ => "BottomRight"
         };
     }
@@ -1407,486 +1334,416 @@
         return new XSolidBrush(transparentColor);
     }
     
-// Add these methods to the end of your @code block in Index.razor
-// Replace the incomplete DrawBorderEffect and add all remaining methods
-
-private void DrawBorderEffect(XGraphics gfx, XPoint point, XSize textSize, string[] lines, XFont font)
-{
-    var borderBrush = GetBrush(borderColor);
-    var pen = new XPen(borderBrush, borderWidth);
-    var rect = new XRect(
-        point.X - borderPadding,
-        point.Y - borderPadding,
-        textSize.Width + (borderPadding * 2),
-        textSize.Height + (borderPadding * 2)
-    );
-    
-    switch (borderStyle)
+    private void DrawBorderEffect(XGraphics gfx, XPoint point, XSize textSize, string[] lines, XFont font)
     {
-        case "Single":
-            gfx.DrawRectangle(pen, XBrushes.Transparent, rect);
-            break;
-            
-        case "Double":
-            gfx.DrawRectangle(pen, XBrushes.Transparent, rect);
-            var innerRect = new XRect(
-                rect.X + borderWidth * 2,
-                rect.Y + borderWidth * 2,
-                rect.Width - borderWidth * 4,
-                rect.Height - borderWidth * 4
-            );
-            gfx.DrawRectangle(pen, XBrushes.Transparent, innerRect);
-            break;
-            
-        case "Rounded":
-            DrawRoundedRectangle(gfx, pen, rect, cornerRadius);
-            break;
-            
-        case "Outline":
-            var outlinePen = new XPen(borderBrush, borderWidth);
-            var currentY = point.Y;
-            foreach (var line in lines)
-            {
-                var textPoint = new XPoint(point.X, currentY);
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        if (dx != 0 || dy != 0)
-                        {
-                            gfx.DrawString(line, font, borderBrush, 
-                                new XPoint(textPoint.X + dx * borderWidth, textPoint.Y + dy * borderWidth), 
-                                XStringFormats.TopLeft);
-                        }
-                    }
-                }
-                currentY += font.Height;
-            }
-            break;
-            
-        case "Shadow":
-            var shadowRect = new XRect(
-                rect.X + effectIntensity,
-                rect.Y + effectIntensity,
-                rect.Width,
-                rect.Height
-            );
-            var shadowBrush = new XSolidBrush(XColor.FromArgb(128, 0, 0, 0));
-            gfx.DrawRectangle(shadowBrush, shadowRect);
-            gfx.DrawRectangle(XPens.Transparent, XBrushes.White, rect);
-            break;
-            
-        case "Glow":
-            for (int i = effectIntensity; i > 0; i--)
-            {
-                var glowRect = new XRect(
-                    rect.X - i,
-                    rect.Y - i,
-                    rect.Width + (i * 2),
-                    rect.Height + (i * 2)
+        var borderBrush = GetBrush(borderColor);
+        var pen = new XPen(borderBrush, borderWidth);
+        var rect = new XRect(
+            point.X - borderPadding,
+            point.Y - borderPadding,
+            textSize.Width + (borderPadding * 2),
+            textSize.Height + (borderPadding * 2)
+        );
+        
+        switch (borderStyle)
+        {
+            case "Single":
+                gfx.DrawRectangle(pen, XBrushes.Transparent, rect);
+                break;
+                
+            case "Double":
+                gfx.DrawRectangle(pen, XBrushes.Transparent, rect);
+                var innerRect = new XRect(
+                    rect.X + borderWidth * 2,
+                    rect.Y + borderWidth * 2,
+                    rect.Width - borderWidth * 4,
+                    rect.Height - borderWidth * 4
                 );
-                var alpha = (byte)(50 / effectIntensity * (effectIntensity - i + 1));
-                var glowColor = GetColorFromBrush(borderBrush);
-                var glowBrush = new XSolidBrush(XColor.FromArgb(alpha, glowColor.R, glowColor.G, glowColor.B));
-                gfx.DrawRectangle(glowBrush, glowRect);
-            }
-            break;
-            
-        case "Highlight":
-            var bgColor = GetColorFromBrush(borderBrush);
-            var highlightBrush = new XSolidBrush(
-                XColor.FromArgb((byte)(255 * backgroundOpacity / 100), bgColor.R, bgColor.G, bgColor.B)
-            );
-            gfx.DrawRectangle(highlightBrush, rect);
-            break;
-            
-        case "Dashed":
-            var dashedPen = new XPen(borderBrush, borderWidth);
-            dashedPen.DashStyle = XDashStyle.Dash;
-            gfx.DrawRectangle(dashedPen, XBrushes.Transparent, rect);
-            break;
-    }
-}
-
-private void DrawRoundedRectangle(XGraphics gfx, XPen pen, XRect rect, double radius)
-{
-    var path = new XGraphicsPath();
-    path.AddArc(rect.X, rect.Y, radius * 2, radius * 2, 180, 90);
-    path.AddArc(rect.X + rect.Width - radius * 2, rect.Y, radius * 2, radius * 2, 270, 90);
-    path.AddArc(rect.X + rect.Width - radius * 2, rect.Y + rect.Height - radius * 2, radius * 2, radius * 2, 0, 90);
-    path.AddArc(rect.X, rect.Y + rect.Height - radius * 2, radius * 2, radius * 2, 90, 90);
-    path.CloseFigure();
-    gfx.DrawPath(pen, path);
-}
-
-private XColor GetColorFromBrush(XBrush brush)
-{
-    return borderColor switch
-    {
-        "Red" => XColors.Red,
-        "Blue" => XColors.Blue,
-        "Green" => XColors.Green,
-        "Black" => XColors.Black,
-        "Gray" => XColors.Gray,
-        "Orange" => XColors.Orange,
-        "Purple" => XColors.Purple,
-        "Yellow" => XColors.Yellow,
-        "White" => XColors.White,
-        _ => XColors.Red
-    };
-}
-
-private XPoint GetPosition(string position, double pageWidth, double pageHeight, XSize textSize, double rotation = 0)
-{
-    const double margin = 30;
-    
-    var rotatedBounds = GetRotatedTextBounds(textSize, rotation);
-    var safeMargin = Math.Max(margin, Math.Max(rotatedBounds.Width, rotatedBounds.Height) / 2 + 10);
-    
-    if (position == "Custom")
-    {
-        var x = safeMargin + (pageWidth - 2 * safeMargin) * customX / 100.0;
-        var y = safeMargin + (pageHeight - 2 * safeMargin) * customY / 100.0;
-        return new XPoint(x, y);
+                gfx.DrawRectangle(pen, XBrushes.Transparent, innerRect);
+                break;
+                
+            case "Rounded":
+                DrawRoundedRectangle(gfx, pen, rect, 10);
+                break;
+                
+            case "Shadow":
+                var shadowRect = new XRect(
+                    rect.X + 3,
+                    rect.Y + 3,
+                    rect.Width,
+                    rect.Height
+                );
+                var shadowBrush = new XSolidBrush(XColor.FromArgb(128, 0, 0, 0));
+                gfx.DrawRectangle(shadowBrush, shadowRect);
+                gfx.DrawRectangle(XPens.Transparent, XBrushes.White, rect);
+                break;
+        }
     }
     
-    XPoint point;
-    
-    switch (position)
+    private void DrawRoundedRectangle(XGraphics gfx, XPen pen, XRect rect, double radius)
     {
-        case "TopLeft":
-            point = new XPoint(safeMargin, safeMargin);
-            break;
-        case "TopCenter":
-            point = new XPoint(pageWidth / 2, safeMargin);
-            break;
-        case "TopRight":
-            point = new XPoint(pageWidth - safeMargin, safeMargin);
-            break;
-        case "Center":
-            point = new XPoint(pageWidth / 2, pageHeight / 2);
-            break;
-        case "BottomLeft":
-            point = new XPoint(safeMargin, pageHeight - safeMargin);
-            break;
-        case "BottomCenter":
-            point = new XPoint(pageWidth / 2, pageHeight - safeMargin);
-            break;
-        case "BottomRight":
-            point = new XPoint(pageWidth - safeMargin, pageHeight - safeMargin);
-            break;
-        default:
-            point = new XPoint(safeMargin, safeMargin);
-            break;
+        var path = new XGraphicsPath();
+        path.AddArc(rect.X, rect.Y, radius * 2, radius * 2, 180, 90);
+        path.AddArc(rect.X + rect.Width - radius * 2, rect.Y, radius * 2, radius * 2, 270, 90);
+        path.AddArc(rect.X + rect.Width - radius * 2, rect.Y + rect.Height - radius * 2, radius * 2, radius * 2, 0, 90);
+        path.AddArc(rect.X, rect.Y + rect.Height - radius * 2, radius * 2, radius * 2, 90, 90);
+        path.CloseFigure();
+        gfx.DrawPath(pen, path);
     }
     
-    return point;
-}
-
-private string GetPdfDataUrl(byte[] pdfBytes)
-{
-    if (pdfBytes == null || pdfBytes.Length == 0)
+    private XColor GetColorFromBrush(XBrush brush)
     {
-        return "about:blank";
-    }
-    
-    try
-    {
-        var base64 = Convert.ToBase64String(pdfBytes);
-        return $"data:application/pdf;base64,{base64}";
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error creating PDF data URL: {ex.Message}");
-        return "about:blank";
-    }
-}
-
-private async Task DownloadStampedPdf()
-{
-    if (stampedPdfBytes == null) return;
-    
-    try
-    {
-        var fileName = $"stamped_{DateTime.Now:yyyyMMddHHmmss}.pdf";
-        var base64 = Convert.ToBase64String(stampedPdfBytes);
-        await JS.InvokeVoidAsync("downloadFile", fileName, base64);
-    }
-    catch (Exception ex)
-    {
-        errorMessage = $"Download error: {ex.Message}";
-    }
-}
-
-private async Task DownloadAllCompleted()
-{
-    try
-    {
-        var filesToDownload = batchFiles.Where(f => f.StampedBytes != null && !f.Downloaded).ToList();
-        
-        if (!filesToDownload.Any())
+        return borderColor switch
         {
-            errorMessage = "All files have already been downloaded!";
-            return;
+            "Red" => XColors.Red,
+            "Blue" => XColors.Blue,
+            "Green" => XColors.Green,
+            "Black" => XColors.Black,
+            "Gray" => XColors.Gray,
+            "Orange" => XColors.Orange,
+            "Purple" => XColors.Purple,
+            "Yellow" => XColors.Yellow,
+            "White" => XColors.White,
+            _ => XColors.Red
+        };
+    }
+    
+    private XPoint GetPosition(string position, double pageWidth, double pageHeight, XSize textSize, double rotation = 0)
+    {
+        const double margin = 30;
+        
+        var rotatedBounds = GetRotatedTextBounds(textSize, rotation);
+        var safeMargin = Math.Max(margin, Math.Max(rotatedBounds.Width, rotatedBounds.Height) / 2 + 10);
+        
+        XPoint point;
+        
+        switch (position)
+        {
+            case "TopLeft":
+                point = new XPoint(safeMargin, safeMargin);
+                break;
+            case "TopCenter":
+                point = new XPoint(pageWidth / 2, safeMargin);
+                break;
+            case "TopRight":
+                point = new XPoint(pageWidth - safeMargin, safeMargin);
+                break;
+            case "Center":
+                point = new XPoint(pageWidth / 2, pageHeight / 2);
+                break;
+            case "BottomLeft":
+                point = new XPoint(safeMargin, pageHeight - safeMargin);
+                break;
+            case "BottomCenter":
+                point = new XPoint(pageWidth / 2, pageHeight - safeMargin);
+                break;
+            case "BottomRight":
+                point = new XPoint(pageWidth - safeMargin, pageHeight - safeMargin);
+                break;
+            default:
+                point = new XPoint(safeMargin, safeMargin);
+                break;
         }
         
-        for (int i = 0; i < filesToDownload.Count; i++)
+        return point;
+    }
+    
+    private string GetPdfDataUrl(byte[] pdfBytes)
+    {
+        if (pdfBytes == null || pdfBytes.Length == 0)
         {
-            var file = filesToDownload[i];
-            var fileName = $"stamped_{Path.GetFileNameWithoutExtension(file.Name)}.pdf";
-            var base64 = Convert.ToBase64String(file.StampedBytes!);
+            return "about:blank";
+        }
+        
+        try
+        {
+            var base64 = Convert.ToBase64String(pdfBytes);
+            return $"data:application/pdf;base64,{base64}";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating PDF data URL: {ex.Message}");
+            return "about:blank";
+        }
+    }
+    
+    private async Task DownloadStampedPdf()
+    {
+        if (stampedPdfBytes == null) return;
+        
+        try
+        {
+            var fileName = $"stamped_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            var base64 = Convert.ToBase64String(stampedPdfBytes);
             await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Download error: {ex.Message}";
+        }
+    }
+    
+    private async Task DownloadAsZip()
+    {
+        try
+        {
+            var completedFiles = batchFiles.Where(f => f.StampedBytes != null).ToList();
             
-            file.Downloaded = true;
-            
-            if (i < filesToDownload.Count - 1)
+            if (!completedFiles.Any())
             {
-                await Task.Delay(1000);
+                errorMessage = "No stamped files to download.";
+                return;
             }
-        }
-        
-        errorMessage = $"Downloaded {filesToDownload.Count} file(s) successfully!";
-    }
-    catch (Exception ex)
-    {
-        errorMessage = $"Download error: {ex.Message}";
-    }
-}
-
-private async Task DownloadAsZip()
-{
-    try
-    {
-        var completedFiles = batchFiles.Where(f => f.StampedBytes != null).ToList();
-        
-        if (!completedFiles.Any())
-        {
-            errorMessage = "No stamped files to download.";
-            return;
-        }
-        
-        using var zipStream = new MemoryStream();
-        var files = new List<(string name, byte[] data, uint crc)>();
-        
-        foreach (var file in completedFiles)
-        {
-            var fileName = $"stamped_{Path.GetFileNameWithoutExtension(file.Name)}.pdf";
-            var crc = CalculateCrc32(file.StampedBytes!);
-            files.Add((fileName, file.StampedBytes!, crc));
-        }
-        
-        var centralDirectory = new List<byte[]>();
-        uint offset = 0;
-        
-        foreach (var (name, data, crc) in files)
-        {
-            var nameBytes = System.Text.Encoding.UTF8.GetBytes(name);
             
-            var localHeader = new List<byte>();
-            localHeader.AddRange(new byte[] { 0x50, 0x4b, 0x03, 0x04 });
-            localHeader.AddRange(BitConverter.GetBytes((ushort)20));
-            localHeader.AddRange(BitConverter.GetBytes((ushort)0));
-            localHeader.AddRange(BitConverter.GetBytes((ushort)0));
-            localHeader.AddRange(BitConverter.GetBytes((ushort)0));
-            localHeader.AddRange(BitConverter.GetBytes((ushort)0));
-            localHeader.AddRange(BitConverter.GetBytes(crc));
-            localHeader.AddRange(BitConverter.GetBytes(data.Length));
-            localHeader.AddRange(BitConverter.GetBytes(data.Length));
-            localHeader.AddRange(BitConverter.GetBytes((ushort)nameBytes.Length));
-            localHeader.AddRange(BitConverter.GetBytes((ushort)0));
-            localHeader.AddRange(nameBytes);
+            using var zipStream = new MemoryStream();
+            var files = new List<(string name, byte[] data, uint crc)>();
             
-            await zipStream.WriteAsync(localHeader.ToArray(), 0, localHeader.Count);
-            await zipStream.WriteAsync(data, 0, data.Length);
+            foreach (var file in completedFiles)
+            {
+                var fileName = $"stamped_{Path.GetFileNameWithoutExtension(file.Name)}.pdf";
+                var crc = CalculateCrc32(file.StampedBytes!);
+                files.Add((fileName, file.StampedBytes!, crc));
+            }
             
-            var centralEntry = new List<byte>();
-            centralEntry.AddRange(new byte[] { 0x50, 0x4b, 0x01, 0x02 });
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)20));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)20));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes(crc));
-            centralEntry.AddRange(BitConverter.GetBytes(data.Length));
-            centralEntry.AddRange(BitConverter.GetBytes(data.Length));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)nameBytes.Length));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
-            centralEntry.AddRange(BitConverter.GetBytes((uint)0));
-            centralEntry.AddRange(BitConverter.GetBytes(offset));
-            centralEntry.AddRange(nameBytes);
+            var centralDirectory = new List<byte[]>();
+            uint offset = 0;
             
-            centralDirectory.Add(centralEntry.ToArray());
-            offset += (uint)(localHeader.Count + data.Length);
+            foreach (var (name, data, crc) in files)
+            {
+                var nameBytes = System.Text.Encoding.UTF8.GetBytes(name);
+                
+                var localHeader = new List<byte>();
+                localHeader.AddRange(new byte[] { 0x50, 0x4b, 0x03, 0x04 });
+                localHeader.AddRange(BitConverter.GetBytes((ushort)20));
+                localHeader.AddRange(BitConverter.GetBytes((ushort)0));
+                localHeader.AddRange(BitConverter.GetBytes((ushort)0));
+                localHeader.AddRange(BitConverter.GetBytes((ushort)0));
+                localHeader.AddRange(BitConverter.GetBytes((ushort)0));
+                localHeader.AddRange(BitConverter.GetBytes(crc));
+                localHeader.AddRange(BitConverter.GetBytes(data.Length));
+                localHeader.AddRange(BitConverter.GetBytes(data.Length));
+                localHeader.AddRange(BitConverter.GetBytes((ushort)nameBytes.Length));
+                localHeader.AddRange(BitConverter.GetBytes((ushort)0));
+                localHeader.AddRange(nameBytes);
+                
+                await zipStream.WriteAsync(localHeader.ToArray(), 0, localHeader.Count);
+                await zipStream.WriteAsync(data, 0, data.Length);
+                
+                var centralEntry = new List<byte>();
+                centralEntry.AddRange(new byte[] { 0x50, 0x4b, 0x01, 0x02 });
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)20));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)20));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes(crc));
+                centralEntry.AddRange(BitConverter.GetBytes(data.Length));
+                centralEntry.AddRange(BitConverter.GetBytes(data.Length));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)nameBytes.Length));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((ushort)0));
+                centralEntry.AddRange(BitConverter.GetBytes((uint)0));
+                centralEntry.AddRange(BitConverter.GetBytes(offset));
+                centralEntry.AddRange(nameBytes);
+                
+                centralDirectory.Add(centralEntry.ToArray());
+                offset += (uint)(localHeader.Count + data.Length);
+            }
+            
+            var centralDirOffset = offset;
+            var centralDirSize = 0;
+            foreach (var entry in centralDirectory)
+            {
+                await zipStream.WriteAsync(entry, 0, entry.Length);
+                centralDirSize += entry.Length;
+            }
+            
+            var endRecord = new List<byte>();
+            endRecord.AddRange(new byte[] { 0x50, 0x4b, 0x05, 0x06 });
+            endRecord.AddRange(BitConverter.GetBytes((ushort)0));
+            endRecord.AddRange(BitConverter.GetBytes((ushort)0));
+            endRecord.AddRange(BitConverter.GetBytes((ushort)files.Count));
+            endRecord.AddRange(BitConverter.GetBytes((ushort)files.Count));
+            endRecord.AddRange(BitConverter.GetBytes(centralDirSize));
+            endRecord.AddRange(BitConverter.GetBytes(centralDirOffset));
+            endRecord.AddRange(BitConverter.GetBytes((ushort)0));
+            
+            await zipStream.WriteAsync(endRecord.ToArray(), 0, endRecord.Count);
+            
+            var zipBytes = zipStream.ToArray();
+            var base64 = Convert.ToBase64String(zipBytes);
+            var zipFileName = $"stamped_pdfs_{DateTime.Now:yyyyMMddHHmmss}.zip";
+            
+            await JS.InvokeVoidAsync("downloadFile", zipFileName, base64);
+            
+            errorMessage = $"Downloaded {completedFiles.Count} file(s) as ZIP successfully!";
         }
-        
-        var centralDirOffset = offset;
-        var centralDirSize = 0;
-        foreach (var entry in centralDirectory)
+        catch (Exception ex)
         {
-            await zipStream.WriteAsync(entry, 0, entry.Length);
-            centralDirSize += entry.Length;
+            errorMessage = $"ZIP download error: {ex.Message}";
         }
-        
-        var endRecord = new List<byte>();
-        endRecord.AddRange(new byte[] { 0x50, 0x4b, 0x05, 0x06 });
-        endRecord.AddRange(BitConverter.GetBytes((ushort)0));
-        endRecord.AddRange(BitConverter.GetBytes((ushort)0));
-        endRecord.AddRange(BitConverter.GetBytes((ushort)files.Count));
-        endRecord.AddRange(BitConverter.GetBytes((ushort)files.Count));
-        endRecord.AddRange(BitConverter.GetBytes(centralDirSize));
-        endRecord.AddRange(BitConverter.GetBytes(centralDirOffset));
-        endRecord.AddRange(BitConverter.GetBytes((ushort)0));
-        
-        await zipStream.WriteAsync(endRecord.ToArray(), 0, endRecord.Count);
-        
-        var zipBytes = zipStream.ToArray();
-        var base64 = Convert.ToBase64String(zipBytes);
-        var zipFileName = $"stamped_pdfs_{DateTime.Now:yyyyMMddHHmmss}.zip";
-        
-        await JS.InvokeVoidAsync("downloadFile", zipFileName, base64);
-        
-        errorMessage = $"Downloaded {completedFiles.Count} file(s) as ZIP successfully!";
-    }
-    catch (Exception ex)
-    {
-        errorMessage = $"ZIP download error: {ex.Message}";
-    }
-}
-
-private uint CalculateCrc32(byte[] data)
-{
-    uint crc = 0xFFFFFFFF;
-    
-    for (int i = 0; i < data.Length; i++)
-    {
-        byte index = (byte)(((crc) & 0xFF) ^ data[i]);
-        crc = (crc >> 8) ^ Crc32Table[index];
     }
     
-    return ~crc;
-}
-
-private static readonly uint[] Crc32Table = new uint[256]
-{
-    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
-    0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91,
-    0x1DB71064, 0x6AB020F2, 0xF3B97148, 0x84BE41DE, 0x1ADAD47D, 0x6DDDE4EB, 0xF4D4B551, 0x83D385C7,
-    0x136C9856, 0x646BA8C0, 0xFD62F97A, 0x8A65C9EC, 0x14015C4F, 0x63066CD9, 0xFA0F3D63, 0x8D080DF5,
-    0x3B6E20C8, 0x4C69105E, 0xD56041E4, 0xA2677172, 0x3C03E4D1, 0x4B04D447, 0xD20D85FD, 0xA50AB56B,
-    0x35B5A8FA, 0x42B2986C, 0xDBBBC9D6, 0xACBCF940, 0x32D86CE3, 0x45DF5C75, 0xDCD60DCF, 0xABD13D59,
-    0x26D930AC, 0x51DE003A, 0xC8D75180, 0xBFD06116, 0x21B4F4B5, 0x56B3C423, 0xCFBA9599, 0xB8BDA50F,
-    0x2802B89E, 0x5F058808, 0xC60CD9B2, 0xB10BE924, 0x2F6F7C87, 0x58684C11, 0xC1611DAB, 0xB6662D3D,
-    0x76DC4190, 0x01DB7106, 0x98D220BC, 0xEFD5102A, 0x71B18589, 0x06B6B51F, 0x9FBFE4A5, 0xE8B8D433,
-    0x7807C9A2, 0x0F00F934, 0x9609A88E, 0xE10E9818, 0x7F6A0DBB, 0x086D3D2D, 0x91646C97, 0xE6635C01,
-    0x6B6B51F4, 0x1C6C6162, 0x856530D8, 0xF262004E, 0x6C0695ED, 0x1B01A57B, 0x8208F4C1, 0xF50FC457,
-    0x65B0D9C6, 0x12B7E950, 0x8BBEB8EA, 0xFCB9887C, 0x62DD1DDF, 0x15DA2D49, 0x8CD37CF3, 0xFBD44C65,
-    0x4DB26158, 0x3AB551CE, 0xA3BC0074, 0xD4BB30E2, 0x4ADFA541, 0x3DD895D7, 0xA4D1C46D, 0xD3D6F4FB,
-    0x4369E96A, 0x346ED9FC, 0xAD678846, 0xDA60B8D0, 0x44042D73, 0x33031DE5, 0xAA0A4C5F, 0xDD0D7CC9,
-    0x5005713C, 0x270241AA, 0xBE0B1010, 0xC90C2086, 0x5768B525, 0x206F85B3, 0xB966D409, 0xCE61E49F,
-    0x5EDEF90E, 0x29D9C998, 0xB0D09822, 0xC7D7A8B4, 0x59B33D17, 0x2EB40D81, 0xB7BD5C3B, 0xC0BA6CAD,
-    0xEDB88320, 0x9ABFB3B6, 0x03B6E20C, 0x74B1D29A, 0xEAD54739, 0x9DD277AF, 0x04DB2615, 0x73DC1683,
-    0xE3630B12, 0x94643B84, 0x0D6D6A3E, 0x7A6A5AA8, 0xE40ECF0B, 0x9309FF9D, 0x0A00AE27, 0x7D079EB1,
-    0xF00F9344, 0x8708A3D2, 0x1E01F268, 0x6906C2FE, 0xF762575D, 0x806567CB, 0x196C3671, 0x6E6B06E7,
-    0xFED41B76, 0x89D32BE0, 0x10DA7A5A, 0x67DD4ACC, 0xF9B9DF6F, 0x8EBEEFF9, 0x17B7BE43, 0x60B08ED5,
-    0xD6D6A3E8, 0xA1D1937E, 0x38D8C2C4, 0x4FDFF252, 0xD1BB67F1, 0xA6BC5767, 0x3FB506DD, 0x48B2364B,
-    0xD80D2BDA, 0xAF0A1B4C, 0x36034AF6, 0x41047A60, 0xDF60EFC3, 0xA867DF55, 0x316E8EEF, 0x4669BE79,
-    0xCB61B38C, 0xBC66831A, 0x256FD2A0, 0x5268E236, 0xCC0C7795, 0xBB0B4703, 0x220216B9, 0x5505262F,
-    0xC5BA3BBE, 0xB2BD0B28, 0x2BB45A92, 0x5CB36A04, 0xC2D7FFA7, 0xB5D0CF31, 0x2CD99E8B, 0x5BDEAE1D,
-    0x9B64C2B0, 0xEC63F226, 0x756AA39C, 0x026D930A, 0x9C0906A9, 0xEB0E363F, 0x72076785, 0x05005713,
-    0x95BF4A82, 0xE2B87A14, 0x7BB12BAE, 0x0CB61B38, 0x92D28E9B, 0xE5D5BE0D, 0x7CDCEFB7, 0x0BDBDF21,
-    0x86D3D2D4, 0xF1D4E242, 0x68DDB3F8, 0x1FDA836E, 0x81BE16CD, 0xF6B9265B, 0x6FB077E1, 0x18B74777,
-    0x88085AE6, 0xFF0F6A70, 0x66063BCA, 0x11010B5C, 0x8F659EFF, 0xF862AE69, 0x616BFFD3, 0x166CCF45,
-    0xA00AE278, 0xD70DD2EE, 0x4E048354, 0x3903B3C2, 0xA7672661, 0xD06016F7, 0x4969474D, 0x3E6E77DB,
-    0xAED16A4A, 0xD9D65ADC, 0x40DF0B66, 0x37D83BF0, 0xA9BCAE53, 0xDEBB9EC5, 0x47B2CF7F, 0x30B5FFE9,
-    0xBDBDF21C, 0xCABAC28A, 0x53B39330, 0x24B4A3A6, 0xBAD03605, 0xCDD70693, 0x54DE5729, 0x23D967BF,
-    0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
-};
-
-private string[] GetPreviewLines()
-{
-    var fullText = PrepareTextWithSymbol();
-    return fullText.Replace("\\n", "\n").Split('\n');
-}
-
-private string GetPreviewLineStyle(string line)
-{
-    var isDateTimeLine = false;
-    if (includeDateTimeStamp && dateTimePosition != "Replace")
+    private uint CalculateCrc32(byte[] data)
     {
-        var lines = GetPreviewLines();
-        isDateTimeLine = (dateTimePosition == "Above" && line == lines[0]) ||
-                        (dateTimePosition == "Below" && line == lines[^1]);
+        uint crc = 0xFFFFFFFF;
+        
+        for (int i = 0; i < data.Length; i++)
+        {
+            byte index = (byte)(((crc) & 0xFF) ^ data[i]);
+            crc = (crc >> 8) ^ Crc32Table[index];
+        }
+        
+        return ~crc;
     }
     
-    var size = isDateTimeLine ? dateTimeFontSize : fontSize;
-    var family = isDateTimeLine ? dateTimeFontFamily : fontFamily;
-    var color = GetColorCode(stampColor);
-    var opacity = stampOpacity / 100.0;
-    
-    return $"font-size: {size}px; font-family: '{family}'; color: {color}; opacity: {opacity}; font-weight: bold; line-height: 1.3; white-space: nowrap;";
-}
-private string GetPreviewFontFamily()
-{
-    return fontFamily;
-}
-
-private string GetColorCode(string colorName)
-{
-    return colorName switch
+    private static readonly uint[] Crc32Table = new uint[256]
     {
-        "Red" => "#FF0000",
-        "Blue" => "#0000FF",
-        "Green" => "#008000",
-        "Black" => "#000000",
-        "Gray" => "#808080",
-        "Orange" => "#FFA500",
-        "Purple" => "#800080",
-        "Yellow" => "#FFFF00",
-        "White" => "#FFFFFF",
-        _ => "#FF0000"
-    };
-}
-
-private string GetPositionBoxStyle(string position)
-{
-    var (top, left) = position switch
-    {
-        "TopLeft" => ("5%", "5%"),
-        "TopCenter" => ("5%", "50%"),
-        "TopRight" => ("5%", "95%"),
-        "Center" => ("50%", "50%"),
-        "BottomLeft" => ("95%", "5%"),
-        "BottomCenter" => ("95%", "50%"),
-        "BottomRight" => ("95%", "95%"),
-        _ => ("50%", "50%")
+        0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
+        0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91,
+        0x1DB71064, 0x6AB020F2, 0xF3B97148, 0x84BE41DE, 0x1ADAD47D, 0x6DDDE4EB, 0xF4D4B551, 0x83D385C7,
+        0x136C9856, 0x646BA8C0, 0xFD62F97A, 0x8A65C9EC, 0x14015C4F, 0x63066CD9, 0xFA0F3D63, 0x8D080DF5,
+        0x3B6E20C8, 0x4C69105E, 0xD56041E4, 0xA2677172, 0x3C03E4D1, 0x4B04D447, 0xD20D85FD, 0xA50AB56B,
+        0x35B5A8FA, 0x42B2986C, 0xDBBBC9D6, 0xACBCF940, 0x32D86CE3, 0x45DF5C75, 0xDCD60DCF, 0xABD13D59,
+        0x26D930AC, 0x51DE003A, 0xC8D75180, 0xBFD06116, 0x21B4F4B5, 0x56B3C423, 0xCFBA9599, 0xB8BDA50F,
+        0x2802B89E, 0x5F058808, 0xC60CD9B2, 0xB10BE924, 0x2F6F7C87, 0x58684C11, 0xC1611DAB, 0xB6662D3D,
+        0x76DC4190, 0x01DB7106, 0x98D220BC, 0xEFD5102A, 0x71B18589, 0x06B6B51F, 0x9FBFE4A5, 0xE8B8D433,
+        0x7807C9A2, 0x0F00F934, 0x9609A88E, 0xE10E9818, 0x7F6A0DBB, 0x086D3D2D, 0x91646C97, 0xE6635C01,
+        0x6B6B51F4, 0x1C6C6162, 0x856530D8, 0xF262004E, 0x6C0695ED, 0x1B01A57B, 0x8208F4C1, 0xF50FC457,
+        0x65B0D9C6, 0x12B7E950, 0x8BBEB8EA, 0xFCB9887C, 0x62DD1DDF, 0x15DA2D49, 0x8CD37CF3, 0xFBD44C65,
+        0x4DB26158, 0x3AB551CE, 0xA3BC0074, 0xD4BB30E2, 0x4ADFA541, 0x3DD895D7, 0xA4D1C46D, 0xD3D6F4FB,
+        0x4369E96A, 0x346ED9FC, 0xAD678846, 0xDA60B8D0, 0x44042D73, 0x33031DE5, 0xAA0A4C5F, 0xDD0D7CC9,
+        0x5005713C, 0x270241AA, 0xBE0B1010, 0xC90C2086, 0x5768B525, 0x206F85B3, 0xB966D409, 0xCE61E49F,
+        0x5EDEF90E, 0x29D9C998, 0xB0D09822, 0xC7D7A8B4, 0x59B33D17, 0x2EB40D81, 0xB7BD5C3B, 0xC0BA6CAD,
+        0xEDB88320, 0x9ABFB3B6, 0x03B6E20C, 0x74B1D29A, 0xEAD54739, 0x9DD277AF, 0x04DB2615, 0x73DC1683,
+        0xE3630B12, 0x94643B84, 0x0D6D6A3E, 0x7A6A5AA8, 0xE40ECF0B, 0x9309FF9D, 0x0A00AE27, 0x7D079EB1,
+        0xF00F9344, 0x8708A3D2, 0x1E01F268, 0x6906C2FE, 0xF762575D, 0x806567CB, 0x196C3671, 0x6E6B06E7,
+        0xFED41B76, 0x89D32BE0, 0x10DA7A5A, 0x67DD4ACC, 0xF9B9DF6F, 0x8EBEEFF9, 0x17B7BE43, 0x60B08ED5,
+        0xD6D6A3E8, 0xA1D1937E, 0x38D8C2C4, 0x4FDFF252, 0xD1BB67F1, 0xA6BC5767, 0x3FB506DD, 0x48B2364B,
+        0xD80D2BDA, 0xAF0A1B4C, 0x36034AF6, 0x41047A60, 0xDF60EFC3, 0xA867DF55, 0x316E8EEF, 0x4669BE79,
+        0xCB61B38C, 0xBC66831A, 0x256FD2A0, 0x5268E236, 0xCC0C7795, 0xBB0B4703, 0x220216B9, 0x5505262F,
+        0xC5BA3BBE, 0xB2BD0B28, 0x2BB45A92, 0x5CB36A04, 0xC2D7FFA7, 0xB5D0CF31, 0x2CD99E8B, 0x5BDEAE1D,
+        0x9B64C2B0, 0xEC63F226, 0x756AA39C, 0x026D930A, 0x9C0906A9, 0xEB0E363F, 0x72076785, 0x05005713,
+        0x95BF4A82, 0xE2B87A14, 0x7BB12BAE, 0x0CB61B38, 0x92D28E9B, 0xE5D5BE0D, 0x7CDCEFB7, 0x0BDBDF21,
+        0x86D3D2D4, 0xF1D4E242, 0x68DDB3F8, 0x1FDA836E, 0x81BE16CD, 0xF6B9265B, 0x6FB077E1, 0x18B74777,
+        0x88085AE6, 0xFF0F6A70, 0x66063BCA, 0x11010B5C, 0x8F659EFF, 0xF862AE69, 0x616BFFD3, 0x166CCF45,
+        0xA00AE278, 0xD70DD2EE, 0x4E048354, 0x3903B3C2, 0xA7672661, 0xD06016F7, 0x4969474D, 0x3E6E77DB,
+        0xAED16A4A, 0xD9D65ADC, 0x40DF0B66, 0x37D83BF0, 0xA9BCAE53, 0xDEBB9EC5, 0x47B2CF7F, 0x30B5FFE9,
+        0xBDBDF21C, 0xCABAC28A, 0x53B39330, 0x24B4A3A6, 0xBAD03605, 0xCDD70693, 0x54DE5729, 0x23D967BF,
+        0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
     };
     
-    var colorCode = GetColorCode(stampColor);
+    private string[] GetPreviewLines()
+    {
+        var fullText = PrepareTextWithSymbol();
+        return fullText.Replace("\\n", "\n").Split('\n');
+    }
     
-    return $"position: absolute; top: {top}; left: {left}; transform: translate(-50%, -50%) rotate({textRotation}deg); width: 40px; height: 30px; border: 2px solid {colorCode}; background-color: {colorCode}20; border-radius: 3px;";
-}
-private void RotateClockwise()
-{
-    textRotation += 45;
-    // Keep rotation between -180 and 180
-    if (textRotation > 180)
-        textRotation -= 360;
-}
-
-private void RotateCounterClockwise()
-{
-    textRotation -= 45;
-    // Keep rotation between -180 and 180
-    if (textRotation < -180)
-        textRotation += 360;
-}
-
-private void ResetRotation()
-{
-    textRotation = 0;
-}
+    private string GetPreviewLineStyle(string line)
+    {
+        var color = GetColorCode(stampColor);
+        var opacity = stampOpacity / 100.0;
+        
+        return $"font-size: {fontSize}px; font-family: '{fontFamily}'; color: {color}; opacity: {opacity}; font-weight: bold; line-height: 1.3; white-space: nowrap;";
+    }
+    
+    private string GetPreviewFontFamily()
+    {
+        return fontFamily;
+    }
+    
+    private string GetColorCode(string colorName)
+    {
+        return colorName switch
+        {
+            "Red" => "#FF0000",
+            "Blue" => "#0000FF",
+            "Green" => "#008000",
+            "Black" => "#000000",
+            "Gray" => "#808080",
+            "Orange" => "#FFA500",
+            "Purple" => "#800080",
+            "Yellow" => "#FFFF00",
+            "White" => "#FFFFFF",
+            _ => "#FF0000"
+        };
+    }
+    
+    private void RotateClockwise()
+    {
+        textRotation += 45;
+        if (textRotation > 180)
+            textRotation -= 360;
+    }
+    
+    private void RotateCounterClockwise()
+    {
+        textRotation -= 45;
+        if (textRotation < -180)
+            textRotation += 360;
+    }
+    
+    private void ResetRotation()
+    {
+        textRotation = 0;
+    }
+    
+    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                errorMessage = "Image must be less than 5MB";
+                return;
+            }
+            
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(memoryStream);
+            stampImageBytes = memoryStream.ToArray();
+            stampImageName = file.Name;
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading image: {ex.Message}";
+        }
+    }
+    
+    private void ClearImage()
+    {
+        stampImageBytes = null;
+        stampImageName = string.Empty;
+    }
+    
+    private string GetImageDataUrl()
+    {
+        if (stampImageBytes == null || stampImageBytes.Length == 0)
+        {
+            return string.Empty;
+        }
+        
+        try
+        {
+            var base64 = Convert.ToBase64String(stampImageBytes);
+            var extension = Path.GetExtension(stampImageName).ToLower();
+            var mimeType = extension switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                _ => "image/png"
+            };
+            return $"data:{mimeType};base64,{base64}";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating image data URL: {ex.Message}");
+            return string.Empty;
+        }
+    }
 }
